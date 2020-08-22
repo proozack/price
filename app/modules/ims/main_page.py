@@ -11,20 +11,26 @@ from app import db
 from app.utils.pass_util import hash_password, verify_password
 import flask
 from app.utils.resource import PrivateResource
+from flask import render_template,  make_response
 
 #from app import session
 #from sqlalchemy import update
 
 import time
 # from flask import make_response
+
+
 import logging
 log = logging.getLogger(__name__)
 
 
 class HelloWorld(Resource):
     def get(self):
-        session['redis_test'] = 'This is a session variable.'
-        return {'hello': 'world'}
+        #session['redis_test'] = 'This is a session variable.'
+        #return {'hello': 'world'}
+        resp = make_response(render_template('index.html'))
+        resp.mimetype = 'text/html'
+        return resp
 
 
 class Users(Resource):

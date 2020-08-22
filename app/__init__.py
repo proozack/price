@@ -6,7 +6,6 @@ from flask_session import Session
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Api
-from flask_session import Session
 from flask_marshmallow import Marshmallow
 from flask_cors import CORS
 from flask import make_response
@@ -25,8 +24,8 @@ api = Api(prefix='/api_v1', catch_all_404s=True, errors=restful_error_messages.e
 def create_app():
     """Construct the core application."""
     app = Flask(__name__, instance_relative_config=False)
-    SESSION_TYPE = 'redis'
-    session = Session(app)
+    # SESSION_TYPE = 'redis'
+    # session = Session(app)
     app.config.from_object(Config)
     db.init_app(app)
     login_manager.init_app(app)
