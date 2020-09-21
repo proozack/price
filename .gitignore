@@ -1,4 +1,5 @@
 conf/*
+log/*
 *.log
 *.json
 *.swap
