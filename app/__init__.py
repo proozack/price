@@ -11,6 +11,9 @@ from flask_cors import CORS
 from flask import make_response
 from .utils import restful_error_messages
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
 import logging
 log = logging.getLogger(__name__)
 # logging.getLogger('flask_cors').level = logging.DEBUG
@@ -39,6 +42,12 @@ def create_app():
         supports_credentials=True, 
         expose_headers=cors_expose_headers
     )
+    
+    # SqlAlchemy Session
+    #sqlalchemy_engine = create_engine(getattr(Config, 'SQLALCHEMY_DATABASE_URI'))
+    #Session = sessionmaker(bind=sqlalchemy_engine)
+    #session = Session()
+
 
     with app.app_context():
         app.secret_key = 'some secret key'

@@ -1,0 +1,30 @@
+{% extends "base_product.html" %}
+{% block title %}{{ resource['description'] }}{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .important { color: #336699; }
+    </style>
+{% endblock %}
+{% block content %}
+
+<div class="container">
+    <h1>{{ resource['description'] }}</h1>
+    {% for result in entities -%} 
+    <div style="border: 1px solid black;">
+        <img class="img-fluid img-thumbnail" style="float: left; height: 200px;" src="{{ result.image }}"/>
+        <div style="height:201px;">
+            <a href="{{ result.url }}" target="_blank">
+                <h3>{{ result.title }}</h3>
+            </a>
+            <span>Domain: <strong>{{ result.domain }}</strong></span>
+                <div>Max Price: {{ result.max_price }} {{ result.currency }}</div>
+                <div>Min Price: {{ result.min_price }} {{ result.currency }}</div>
+                <div>AVG Price: {{ result.avg_price }} {{ result.currency }}</div>
+                <div>Visit count: {{ result.count_visit }}</div>
+                <div>Recent visits data: {{ result.recent_visits_data.strftime('%Y-%m-%d') }}</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

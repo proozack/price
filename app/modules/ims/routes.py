@@ -1,12 +1,16 @@
 from app import api
-# from .main_page import (HelloWorld, Users, UserEP, LogOut, SignIn, SignUp, Status, Auth, UiRouterNavigation, OfertList)
+# from .main_page import (HelloWorld, Users, UserEP, LogOut,
+# SignIn, SignUp, Status, Auth, UiRouterNavigation, OfertList)
 from .main_page import HelloWorld
+from .main_page import (CategoryView, ProductView)
 
 import logging
 log = logging.getLogger(__name__)
 
 
 api.add_resource(HelloWorld, '/')
+api.add_resource(CategoryView, '/category/<string:category>/<int:page>')
+api.add_resource(ProductView, '/category/<string:category>/<string:product>')
 """
 #api.add_resource(Users, '/users')
 api.add_resource(Users, '/users')
