@@ -1,11 +1,8 @@
-from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import Column, Integer, String, Date, Boolean, ForeignKey, Float
+from sqlalchemy import Column, Integer, String, Date, Boolean, ForeignKey
 from sqlalchemy.types import Text
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declared_attr
-from sqlalchemy import Sequence
 
-from app import db
 from app.utils.models import DbUtils
 from datetime import datetime
 import logging
@@ -26,6 +23,7 @@ class UserBase(DbUtils):
     is_active = Column(Boolean, nullable=False, default=False)
     is_anonymous = Column(Boolean, nullable=False, default=False)
 
+
 class User(UserBase):
     __tablename__ = 'ims_users'
 
@@ -42,10 +40,10 @@ class User(UserBase):
         """Return the email address to satisfy Flask-Login's requirements."""
         return self.id
 
+
 class UserArch(UserBase):
     """Tabela archiwalna dla tabeli users"""
     __tablename__ = 'ims_users_arch'
-
 
 
 class WorkerBase(DbUtils):
@@ -55,15 +53,16 @@ class WorkerBase(DbUtils):
     birthdays = Column(Date, nullable=True)
     description = Column(Text, nullable=True)
     sex = Column(String(1), nullable=False, default='M')
-    #user_id = Column(Integer, ForeignKey('ims_users.id'))
+    # user_id = Column(Integer, ForeignKey('ims_users.id'))
 
     @declared_attr
     def users_id(cls):
-       return Column(ForeignKey('ims_users.id'))
+       return Column(ForeignKey('ims_users.id'))  # noqa E111
 
     @declared_attr
     def user(cls):
         return relationship("User")
+
 
 class Worker (WorkerBase):
     __tablename__ = 'ims_workers'
@@ -75,7 +74,7 @@ class Worker (WorkerBase):
         self.sex = sex
 
     def __repr__(self):
-        return '<Worker %r %r>' %(self.first_name, self.last_name)
+        return '<Worker %r %r>' % (self.first_name, self.last_name)
 
 
 class ArchWorker(WorkerBase):
@@ -97,15 +96,4 @@ class AuthLog(DbUtils):
         self.message = message
 
     def __repr__(self):
-        return '<Auth %r %r>' %(self.login_used, self.if_loged)
-
-class Ofert(DbUtils):
-    __tablename__ = 'ofert'
-
-    id = Column(Integer, Sequence('ofert_id_seq'), primary_key=True)
-    title = Column(Text)
-    price = Column(Float)
-    currency = Column(String)
-    url = Column(Text)
-    image = Column(Text)
-
+        return '<Auth %r %r>' % (self.login_used, self.if_loged)

@@ -1,9 +1,11 @@
 conf/*
+log/*
 *.log
 *.json
 *.swap
 *.swp
-
+*.swo
+static/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

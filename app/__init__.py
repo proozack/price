@@ -6,11 +6,13 @@ from flask_session import Session
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Api
-from flask_session import Session
 from flask_marshmallow import Marshmallow
 from flask_cors import CORS
 from flask import make_response
 from .utils import restful_error_messages
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 import logging
 log = logging.getLogger(__name__)
@@ -25,8 +27,8 @@ api = Api(prefix='/api_v1', catch_all_404s=True, errors=restful_error_messages.e
 def create_app():
     """Construct the core application."""
     app = Flask(__name__, instance_relative_config=False)
-    SESSION_TYPE = 'redis'
-    session = Session(app)
+    # SESSION_TYPE = 'redis'
+    # session = Session(app)
     app.config.from_object(Config)
     db.init_app(app)
     login_manager.init_app(app)
@@ -40,6 +42,12 @@ def create_app():
         supports_credentials=True, 
         expose_headers=cors_expose_headers
     )
+    
+    # SqlAlchemy Session
+    #sqlalchemy_engine = create_engine(getattr(Config, 'SQLALCHEMY_DATABASE_URI'))
+    #Session = sessionmaker(bind=sqlalchemy_engine)
+    #session = Session()
+
 
     with app.app_context():
         app.secret_key = 'some secret key'
