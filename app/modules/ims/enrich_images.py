@@ -1,4 +1,4 @@
-from app.modules.ims.models import Image, Ofert
+from app.modules.price.models import Image, Ofert
 from app.utils.image_utils import WebImageUtils
 from app import db
 

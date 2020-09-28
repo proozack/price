@@ -16,7 +16,8 @@ Ofert = namedtuple(
         'price',
         'currency',
         'url',
-        'image'
+        'image',
+        'manufacturer'
     ]
 )
 

@@ -15,7 +15,9 @@ from app.modules.ims.models import User, AuthLog
 from app.utils.local_type import MenuLink
 from app.utils.url_utils import UrlUtils
 from sqlalchemy import desc, func
-from app.modules.ims.models import Shop, MetaCategory, Category, EntryPoint
+from app.modules.price.models import Shop, MetaCategory, Category, EntryPoint
+from app.modules.price.models import Ofert, Image
+# from sqlalchemy.sql.expression import func
 
 import logging
 log = logging.getLogger(__name__)
@@ -98,13 +100,12 @@ class CategoryView(Resource):
     def get(self, category, page=1):
         count = 0
         # log.info('Wyświetlam stronę: %r', page)
-        from app.modules.ims.models import Ofert, Image
-        from sqlalchemy.sql.expression import func
         # import base64 as b
         # log.info('To jest db %r', dir(db))
         if category == 'bodysuits':
             result = db.session.query(func.max(Ofert.creation_date)).first()
             # o = Ofert.query.filter(Ofert.creation_date >= result[0].date()).join(Image, Image.image == Ofert.image)\
+            log.info('Szukam dla daty {}'.format(result))
             if result[0]:
                 o = db.session.query(
                     Ofert.title,
@@ -181,7 +182,7 @@ class ProductView(Resource):
         # import base64 as b
         # from app.modules.ims.models import Ofert
         # wyn = b.decodebytes(str.encode(product)).decode("utf-8")
-        from app.modules.ims.models import Ofert, Image
+        # from app.modules.ims.models import Ofert, Image
         wyn = product
         """
         # result = db.session.query(func.max(Ofert.creation_date)).first()
@@ -457,7 +458,7 @@ class UiRouterNavigation(PrivateResource):
 class OfertList(PrivateResource):
 
     def get(self):
-        from app.modules.ims.models import Ofert
+        # from app.modules.ims.models import Ofert
         o = Ofert.query.all()
         lista = [
             i.get_dict()
