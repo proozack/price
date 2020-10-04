@@ -6,7 +6,7 @@ from app.utils.download_utils import SmallResponseObject
 from . import parsers_collection as pcoll
 from .collection_of_catalogs_parsers import catalogs_parser_wrapper
 # div_catalogs_parser, article_catalogs_parser
-from .data_digger import (DomodiPl, IntimitiPl, NoshamePl, SwiatbieliznyPl, IntymnaPl, OhsoPl, ByannPl, KontriPl, SensualePl, ELadyPl, UlubionabieliznaPl, MagicznabieliznaPl) # noqa F401
+from .data_digger import (DomodiPl, IntimitiPl, NoshamePl, SwiatbieliznyPl, IntymnaPl, OhsoPl, ByannPl, KontriPl, SensualePl, ELadyPl, UlubionabieliznaPl, MagicznabieliznaPl, EkskluzywnaPl, EldarPl, AnaisApparelPl, MorgantiPl) # noqa F401
 
 import logging
 log = logging.getLogger(__name__)
@@ -66,6 +66,8 @@ class GaleryParser(AbstractParser):
             'sensuale.pl': 'div_product',
             'e-lady.pl': 'div_product_box',
             'magicznabielizna.pl': 'div_multi_class',
+            'ekskluzywna.pl': 'div_class_one',
+            'eldar.pl': 'div_product',
         }
 
         for wyn in self._soup.find_all('article'):
@@ -79,7 +81,14 @@ class GaleryParser(AbstractParser):
 
         for field in catalogs_parser_wrapper(parsers_type, self._soup):
             wyn = self.m.parse_entity(field)
-            result.append(wyn)
+            log.info('%r', wyn)
+            if wyn:
+                if wyn.title != NotImplemented and wyn.price != NotImplemented and wyn.url != NotImplemented and wyn.image != NotImplemented and wyn.manufacturer != NotImplemented and wyn.currency != NotImplemented: # noqa E501
+                    result.append(wyn)
+                else:
+                    log.warning('Jedno z pól jest nie zaimplementowane')
+            else:
+                log.warning('Pole jest puste, %r', field)
 
         return result
 

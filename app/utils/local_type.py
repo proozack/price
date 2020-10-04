@@ -28,3 +28,25 @@ MenuLink = namedtuple(
         'representation',
         'parent']
     )
+
+
+class LocalType():
+    def set_attr_from_kwargs(self, **kwargs):
+        self._fields = []
+        for field in kwargs:
+            setattr(self, field, kwargs.get(field))
+            self._fields.append(field)
+
+    def get_dict(self):
+        return {
+            field: getattr(self, field)
+            for field in self._fields
+        }
+
+    def __repr__(self):
+        return '{}'.format(self.__class__)
+
+
+class TempProduct(LocalType):
+    def __init__(self, **kwargs):
+        self.set_attr_from_kwargs(**kwargs)

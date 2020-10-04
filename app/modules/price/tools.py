@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from app.modules.price.db_utils import BrandDbUtils, OfertDbUtils
+from app.modules.price.db_utils import BrandDbUtils, OfertDbUtils, KeyWordLinkDbUtils
 from app.utils.url_utils import UrlUtils
 
 import logging
@@ -13,12 +13,9 @@ class ProductTools():
         self.brands_list = self.bdbu.get_all_brand_as_list()
 
     def search_brand(self, title):
-        """
-        this cod is wrong shoul by rfactoring
-        """
         title_list = title.split(' ')
         for title_element in title_list:
-            if title_element in self.brands_list:
+            if title_element.lower() in self.brands_list:
                 return title_element
         return False
 
@@ -36,11 +33,41 @@ class ProductTools():
         )
 
 
+class CategoryTools():
+    def __init__(self, category_id):
+        self.kwldu = KeyWordLinkDbUtils()
+        self.category_id = category_id
+        self.category_synonyms = self.kwldu.get_word_by_category(category_id)
+
+    def search_catgeory_name(self, title):
+        """
+        this cod is wrong shoul by rfactoring
+        należy przewidzieć wielowyrazowe nazwy producentów ; pioniższy kod nie uwzględnia tego
+        """
+        title_list = title.split(' ')
+        for title_element in title_list:
+            if title_element.lower() in self.category_synonyms:
+                return title_element
+        return False
+
+    def remove_category_from_title(self, title):
+        result = self.search_catgeory_name(title)
+        if not result:
+            result = ''
+        return (
+            title.replace(
+                result,
+                ''
+            ).strip(),
+            None if result == '' else result,
+        )
+
+
 class OfertTools():
     def __init__(self):
         pass
 
-    def parse_title(self, category_id):
+    def parse_title_by_category(self, category_id):
         p = ProductTools()
         o = OfertDbUtils()
         for ofert in o.get_all_ofert_by_category(category_id):
