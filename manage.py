@@ -31,26 +31,7 @@ def _shell_context():
 
 
 @manager.command
-def enrich_image():
-    """
-    Run enriching images process
-    """
-    log.info('Start enrich images ... ')
-    with app.app_context():
-        e = EnrichImages()
-        e.parase_all_images()
-
-
-@manager.command
-def add_entry_point(url):
-    """
-    Add entry point to resources
-    """
-    print('Add entry point to resources {}'.format(url))
-
-
-@manager.command
-def parse_page(url):
+def try_parse_page(url):
     """
     Parse page without results save - using for testing parsing
     """
@@ -62,13 +43,67 @@ def parse_page(url):
 
 
 @manager.command
+def try_get_next_page(url):
+    """
+    Parse page without results save - using for testing parsing
+    """
+    log.info('Started parase page, url: %r', url)
+    ps = PriceServices()
+    p = ps.test_next_page(url) # noqa F841
+
+
+@manager.command
+def add_entry_point(entry_point, category_id):
+    """
+    Add entry point do db
+    """
+    log.info('Try add entry point %r %r', entry_point, category_id)
+    ps = PriceServices()
+    p = ps.add_entry_point(entry_point, category_id) # noqa F841
+
+
+@manager.command
 def run_downloading(enty_point_id=None):
     """
     Run parasing all entry point defined in price_enty_point
     """
     print('Run parasing all enty points')
     s = PriceServices()
-    s.run_entry_points()
+    s.run_entry_points(enty_point_id)
+
+
+@manager.command
+def parse_ofert(ofert_id=None):
+    """
+    Run parasing all ofert storage in price_ofert
+    """
+    if ofert_id:
+        log.info('Run parasing ofert: Ofert_id:{}'.format(ofert_id))
+    else:
+        log.info('Run parasing all oferts')
+    s = PriceServices()
+    s.parase_ofert(ofert_id)
+
+
+@manager.command
+def list_entry_point():
+    """
+    Show all entry points
+    """
+    print('Run parasing all enty points')
+    s = PriceServices()
+    s.get_list_entry_point()
+
+
+@manager.command
+def enrich_image():
+    """
+    Run enriching images process
+    """
+    log.info('Start enrich images ... ')
+    with app.app_context():
+        e = EnrichImages()
+        e.parase_all_images()
 
 
 @manager.command

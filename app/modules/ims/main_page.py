@@ -99,9 +99,6 @@ class EntyPoints(Resource):
 class CategoryView(Resource):
     def get(self, category, page=1):
         count = 0
-        # log.info('Wyświetlam stronę: %r', page)
-        # import base64 as b
-        # log.info('To jest db %r', dir(db))
         if category == 'bodysuits':
             result = db.session.query(func.max(Ofert.creation_date)).first()
             # o = Ofert.query.filter(Ofert.creation_date >= result[0].date()).join(Image, Image.image == Ofert.image)\
@@ -173,6 +170,82 @@ class CategoryView(Resource):
         return resp
 
 
+class ShopsStats(Resource):
+    def get(self):
+        result = None
+        entities = []
+        _sql = """
+        WITH stat AS (
+                SELECT
+                        s.url,
+                        COUNT(o.id) as ile
+                FROM price_ofert AS o
+                JOIN price_entry_point AS ep ON ep.id = o.entry_point_id
+                JOIN price_shop AS s ON s.id = ep.shop_id
+                WHERE o.creation_date::date = CURRENT_DATE
+                GROUP BY ep.id, s.url
+        ),
+        stat_1 AS (
+        SELECT
+                        s.url,
+                        COUNT(o.id) as ile
+                FROM price_ofert AS o
+                JOIN price_entry_point AS ep ON ep.id = o.entry_point_id
+                JOIN price_shop AS s ON s.id = ep.shop_id
+                WHERE o.creation_date::date = CURRENT_DATE -1
+                GROUP BY ep.id, s.url
+        ),
+        stat_2 AS (
+        SELECT
+                        s.url,
+                        COUNT(o.id) as ile
+                FROM price_ofert AS o
+                JOIN price_entry_point AS ep ON ep.id = o.entry_point_id
+                JOIN price_shop AS s ON s.id = ep.shop_id
+                WHERE o.creation_date::date = CURRENT_DATE -1
+                GROUP BY ep.id, s.url
+        )
+        SELECT
+                ep.id,
+                ps.url AS shop_name,
+                coalesce(s1.ile,0) AS "t2",
+                coalesce(s1.ile,0) AS "t1",
+                coalesce(s.ile,0) AS "t0"
+        FROM price_shop  AS ps
+        JOIN price_entry_point AS ep ON ep.shop_id = ps.id
+        LEFT JOIN stat AS s ON s.url = ps.url
+        LEFT JOIN stat_1 AS s1 ON s1.url = ps.url
+        LEFT JOIN stat_2 AS s2 ON s2.url = ps.url
+        """
+        result = db.engine.execute(_sql)
+
+        fields = result.keys()
+        entities = [
+            {
+            field: getattr(i, field) # noqa E122
+            for field in fields # noqa E122
+            }
+            for i in result
+        ]
+        template = render_template(
+            'shops.html',
+            resource={
+                'title': '2py.eu',
+                'icon_path': 'http://2py.eu/img/brand/wtmlogo.png',
+                'description': 'Shops list',
+                'real_url': 'http://2py.eu:9999/api_v1/',
+                'static_url': 'http://2py.eu:9080/',
+                'menu': menu,
+                'fields': fields,
+            },
+            entities=entities
+        )
+        resp = make_response(template)
+        resp.mimetype = 'text/html'
+        log.info('To jest wynik %r', menu)
+        return resp
+
+
 class ProductView(Resource):
     def get(self, category, product):
         count = 0
@@ -206,6 +279,7 @@ class ProductView(Resource):
             func.max(Ofert.creation_date).label('recent_visits_data'),
             Ofert.currency,
             Image.control_sum,
+            Ofert.manufacturer
         ).join(
             Image,
             Image.image == Ofert.image
@@ -218,7 +292,8 @@ class ProductView(Resource):
             Ofert.url,
             Ofert.image,
             Ofert.currency,
-            Image.control_sum
+            Image.control_sum,
+            Ofert.manufacturer
         ).all()
         entities = [
             {
@@ -233,6 +308,7 @@ class ProductView(Resource):
                 'recent_visits_data': i.recent_visits_data,
                 'currency': i.currency,
                 'hash': i.control_sum,
+                'manufacturer': i.manufacturer
             }
             for i in o
         ]

@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Float, Integer, Text, ForeignKey, String
+from sqlalchemy import Column, Float, Integer, Text, ForeignKey, String, Numeric, Date
 from sqlalchemy import Sequence
 from app.utils.models import DbUtils
+from app import db
 
 
 import logging
@@ -194,8 +195,204 @@ class KeyWordLink(DbUtils):
     def __init__(self, category_id, key_word_id):
         self.category_id = category_id
         self.key_word_id = key_word_id
-        # self.created_by = Config.PRICE_USER_ID
-        # self.creation_date = datetime.now()
 
     def __repr__(self):
         return '<KeyWordLink> ({},{}, ID IDUSRR: {})'.format(self.category_id, self.key_word_id, self.created_by)
+
+
+class TagWordLink(DbUtils):
+    __tablename__ = 'price_tag_word_link'
+    __seqname__ = '{}_id_seq'.format(__tablename__)
+
+    id = Column(Integer, Sequence(__seqname__), primary_key=True)
+    product_id = Column(
+        Integer,
+        ForeignKey("price_product.id"),
+        nullable=False,
+        comment='FK to price_product table'
+    )
+    key_word_id = Column(
+        Integer,
+        ForeignKey("price_key_word.id"),
+        nullable=False,
+        comment='FK to key_word table'
+    )
+
+    def __init__(self, product_id, key_word_id):
+        self.product_id = product_id
+        self.key_word_id = key_word_id
+
+    def __repr__(self):
+        return '<KeyWordLink> ({},{}, ID IDUSRR: {})'.format(self.product_id, self.key_word_id, self.created_by)
+
+
+class Product(DbUtils):
+    __tablename__ = 'price_product'
+    __seqname__ = '{}_id_seq'.format(__tablename__)
+
+    id = Column(Integer, Sequence(__seqname__), primary_key=True)
+    name = Column(Text, nullable=False, comment='Name of product')
+    brand_id = Column(
+        Integer,
+        ForeignKey("price_brand.id"),
+        nullable=False,
+        comment='FK to brand table'
+    )
+    category_id = Column(
+        Integer,
+        ForeignKey("price_category.id"),
+        nullable=False,
+        comment='FK to category table'
+    )
+    description = Column(Text, nullable=True, comment='A description of the item')
+    slug = Column(Text, nullable=False, comment='Slug of product for url, include category name')
+
+    def __init__(self, name, brand_id, category_id):
+        self.brand_id = brand_id
+        self.name = name
+        self.category_id = category_id
+
+    def __repr__(self):
+        return '<Product {}> Brand ID: {}'.format(self.name, self.brand_id)
+
+
+"""
+class ProductShop(DbUtils):
+    __tablename__ = 'price_product_shop'
+    __seqname__ = '{}_id_seq'.format(__tablename__)
+
+    id = Column(Integer, Sequence(__seqname__), primary_key=True)
+    product_id = Column(
+        Integer,
+        ForeignKey("price_product.id"),
+        nullable=False,
+        comment='FK to product table'
+    )
+    shop_id = Column(
+        Integer,
+        ForeignKey("price_shop.id"),
+        nullable=False,
+        comment='FK to shop table'
+    )
+
+    def __init__(self, product_id, shop_id):
+        self.product_id = product_id
+        self.shop_id = shop_id
+
+    def __repr__(self):
+        return '<Product {}> Brand ID: {}'.format(self.name, self.brand_id)
+"""
+
+
+class ImageRepo(DbUtils):
+    __tablename__ = 'price_repo_image'
+    __seqname__ = '{}_id_seq'.format(__tablename__)
+
+    id = Column(Integer, Sequence(__seqname__), primary_key=True)
+    control_sum = Column(Text)
+    image = Column(Text)
+    dimension = Column(Text)
+    size = Column(Integer)
+    orientation = Column(Text)
+    main_color = Column(Text)
+
+
+class ProductImage(DbUtils):
+    __tablename__ = 'price_product_image'
+    __seqname__ = '{}_id_seq'.format(__tablename__)
+
+    id = Column(Integer, Sequence(__seqname__), primary_key=True)
+    product_id = Column(
+        Integer,
+        ForeignKey("price_product.id"),
+        nullable=False,
+        comment='FK to product table'
+    )
+    repo_image_id = Column(
+        Integer,
+        ForeignKey("price_repo_image.id"),
+        nullable=False,
+        comment='FK to images repository'
+    )
+
+    def __init__(self, product_id, repo_image_id):
+        self.product_id = product_id
+        self.repo_image_id = repo_image_id
+
+    def __repr__(self):
+        return '<ProductImage {} - {}>'.format(self.product_id, self.repo_image_id)
+
+
+class ProductPrice(DbUtils):
+    __tablename__ = 'price_product_price'
+    __seqname__ = '{}_id_seq'.format(__tablename__)
+
+    id = Column(Integer, Sequence(__seqname__), primary_key=True)
+    product_id = Column(
+        Integer,
+        ForeignKey("price_product.id"),
+        nullable=False,
+        comment='FK to product table'
+    )
+    shop_id = Column(
+        Integer,
+        ForeignKey("price_repo_image.id"),
+        nullable=False,
+        comment='FK to images repository'
+    )
+    date_price = Column(Date, nullable=False, comment='Date for registration product price')
+    price = Column(Numeric(10, 2), nullable=False, comment='Price for product')
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            'product_id',
+            'shop_id',
+            'date_price',
+            name='uniq_product_id_shop_id_date_price'
+        ),
+    )
+
+    def __init__(self, product_id, shop_id, price, date_price):
+        self.product_id = product_id
+        self.shop_id = shop_id
+        self.price = price
+        self.date_price = date_price
+
+    def __repr__(self):
+        return '<ProductPrice {}> Product ID {} Date {}'.format(self.price, self.product_id, self.date_price)
+
+
+class ProductShopUrl(DbUtils):
+    __tablename__ = 'price_product_shop_url'
+    __seqname__ = '{}_id_seq'.format(__tablename__)
+
+    id = Column(Integer, Sequence(__seqname__), primary_key=True)
+    product_id = Column(
+        Integer,
+        ForeignKey("price_product.id"),
+        nullable=False,
+        comment='FK to product table'
+    )
+    shop_id = Column(
+        Integer,
+        ForeignKey("price_repo_image.id"),
+        nullable=False,
+        comment='FK to images repository'
+    )
+    url = Column(Text, nullable=False, comment='Url to products page')
+    __table_args__ = (
+        db.UniqueConstraint(
+            'product_id',
+            'shop_id',
+            'url',
+            name='uniq_product_id_shop_id_url'
+        ),
+    )
+
+    def __init__(self, url, product_id, shop_id):
+        self.url = url
+        self.product_id = product_id
+        self.shop_id = shop_id
+
+    def __repr__(self):
+        return '<EntryPoint %r (%r:%r)>' % (self.url, self.product_by, self.shop_id)

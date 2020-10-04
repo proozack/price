@@ -556,3 +556,162 @@ class MagicznabieliznaPl():
                 result = raw_a_np[0].get('href')
                 # path = ''.join([self.response_object.protocol,'://', self.response_object.domain, result])
                 return result
+
+
+class EkskluzywnaPl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+
+        raw_tab = soup.findAll('article')
+        if raw_tab:
+            address = raw_tab[0].get('data-url')
+
+        raw_img = soup.findAll('img')
+        if raw_img:
+            img = raw_img[0].get('src')
+            title = raw_img[0].get('title')
+        raw_price = soup.findAll(attrs={'itemprop': 'price'})
+        if raw_price:
+            price = raw_price[0].get('content')
+        raw_currency = soup.findAll(attrs={'itemprop': 'priceCurrency'})
+        if raw_currency:
+            currency = raw_currency[0].get('content')
+        manufacturer = None
+
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        next_page_raw = soup.findAll(attrs={"class": "pagination-next"})
+        if next_page_raw:
+            result = next_page_raw[0].get('href')
+            path = ''.join([self.response_object.protocol, '://', self.response_object.domain, result])
+            return path
+
+
+class EldarPl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+        raw_string = soup.findAll('a')
+        if raw_string:
+            url = raw_string[0].get('href')
+            address = ''.join([self.response_object.protocol, '://', self.response_object.domain, url])
+            title = raw_string[0].get('title')
+            raw_img = raw_string[0].findAll('img')
+            if raw_img:
+                img = raw_img[0].get('data-src')
+        raw_price = soup.findAll(attrs={"class": "price"})
+        if raw_price:
+            tmp_price = raw_price[0].text.split(' ')
+            price = tmp_price[0].replace(',', '.').strip()
+            currency = tmp_price[1].strip()
+        manufacturer = 'eldar'
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        next_page_raw = soup.findAll(attrs={"class": "--next"})
+        if next_page_raw:
+            raw_a = next_page_raw[0].findAll('a')
+            if raw_a:
+                result = raw_a[0].get('href')
+                path = ''.join([self.response_object.protocol, '://', self.response_object.domain, result])
+                return path
+
+
+class AnaisApparelPl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+        raw_string = soup.findAll('a')
+        if raw_string:
+            url = raw_string[0].get('href')
+            address = url
+            title = raw_string[0].get('title')
+        raw_img = soup.findAll('img')
+        if raw_img:
+            img = raw_img[0].get('src')
+
+        raw_price = soup.findAll(attrs={"class": "price"})
+        if raw_price:
+            tmp_price = raw_price[0].text.split(' ')
+            price = tmp_price[0].replace(',', '.').strip()
+            currency = tmp_price[1].strip()
+        manufacturer = 'anais'
+
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        next_page_raw = soup.findAll(attrs={"class": "pagination_next"})
+        if next_page_raw:
+            raw_a = next_page_raw[0].findAll('a')
+            if raw_a:
+                result = raw_a[0].get('href')
+                path = ''.join([self.response_object.protocol, '://', self.response_object.domain, result])
+                return path
+
+
+class MorgantiPl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+        raw_string = soup.findAll('a')
+        if raw_string:
+            url = raw_string[0].get('href')
+            address = ''.join([self.response_object.protocol, '://', self.response_object.domain, '/', url])
+            title = raw_string[1].text.strip()
+        raw_img = soup.findAll('img')
+        if raw_img:
+            tmp_img = raw_img[0].get('src')
+            img = ''.join([self.response_object.protocol, '://', self.response_object.domain, '/', tmp_img])
+
+        raw_price = soup.findAll(attrs={"class": "price"})
+        if raw_price:
+            raw_strong = raw_price[0].findAll('strong')
+            if raw_strong:
+                tmp_price = raw_strong[0].text.split(' ')
+                price = tmp_price[0].strip()
+                currency = tmp_price[1].strip()
+        manufacturer = None
+
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        next_page_raw = soup.findAll(attrs={'class': 'next'})
+        if next_page_raw:
+            result = next_page_raw[0].get('href')
+            if result:
+                path = ''.join([self.response_object.protocol, '://', self.response_object.domain, '/', result])
+                return path

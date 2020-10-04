@@ -1,0 +1,38 @@
+{% extends "base_product.html" %}
+{% block title %}{{ resource['description'] }}{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .important { color: #336699; }
+    </style>
+{% endblock %}
+{% block content %}
+
+<div class="container">
+    <h1>{{ resource['description'] }}</h1>
+
+    <table id="shops" class="display">
+        <thead>
+        <tr>
+        {% for field in resource['fields'] -%}
+            <th>{{ field }}</th>
+        {% endfor %}
+        </tr>
+        </thead>
+        <tbody>
+    {% for result in entities -%} 
+    <tr>
+        {% for field in resource['fields'] -%}
+        <td> {{ result.__getitem__(field) }} </td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+    </tbody>
+    </table>
+</div>
+<script>
+$(document).ready( function () {
+    $('#shops').DataTable();
+} );
+</script>
+{% endblock %}
