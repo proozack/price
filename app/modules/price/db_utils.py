@@ -1,6 +1,6 @@
 from app import db
 from sqlalchemy import and_
-from app.modules.price.models import (EntryPoint, Shop, Category, Ofert, Brand, Product, KeyWord, KeyWordLink)
+from app.modules.price.models import (EntryPoint, Shop, Category, Ofert, Brand, Product, KeyWord, KeyWordLink, MetaCategory) # noqa E501
 from app.utils.url_utils import UrlUtils
 
 import logging
@@ -51,7 +51,7 @@ class EntryPointsDbUtils():
             sdu = ShopDbUtils()
             shop_id = sdu.add_new_shop(u.domain)
             ep = EntryPoint(entry_point, category_id, shop_id)
-            log.info('Added new entry point %r for catgeory_id: %r,  shop_id: %r', entry_point,  category_id, shop_id)
+            log.info('Added new entry point %r for category_id: %r,  shop_id: %r', entry_point,  category_id, shop_id)
             db.session.add(ep)
             db.session.commit()
         else:
@@ -206,6 +206,16 @@ class KeyWordLinkDbUtils():
         db.session.add(kwl)
         db.session.commit()
 
+    def get_all_word(self):
+        return db.session.query(
+            KeyWord.value,
+            KeyWordLink.category_id,
+            KeyWord.id
+        ).join(
+            KeyWordLink,
+            KeyWordLink.key_word_id == KeyWord.id
+        ).all()
+
     def get_word_by_category(self, category_id):
         words = db.session.query(
             KeyWord.value
@@ -219,3 +229,30 @@ class KeyWordLinkDbUtils():
             word[0]
             for word in words
         ]
+
+
+class CategoryDbUtils():
+    def add_category(self, name, meta_category_id):
+        catgeory = Category(name, meta_category_id)
+        db.session.add(catgeory)
+        db.session.commit()
+        return catgeory.id
+
+    def get_all_category(self):
+        return db.session.query(
+            Category.id.label('category_id'),
+            Category.name.label('category_name'),
+            MetaCategory.id.label('metacategory_id'),
+            MetaCategory.name.label('meta_category_name')
+        ).join(
+            MetaCategory,
+            MetaCategory.id == Category.meta_category_id
+        ).all()
+
+    def get_category_name_by_id(self, category_id):
+        catgeory = db.session.query(
+            Category.name
+        ).filter(
+            Category.id == category_id
+        ).first()
+        return catgeory[0]

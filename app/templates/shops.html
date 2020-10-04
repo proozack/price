@@ -14,7 +14,7 @@
     <table id="shops" class="display">
         <thead>
         <tr>
-        {% for field in resource['fields'] -%}
+        {% for field in resource.fields_name -%}
             <th>{{ field }}</th>
         {% endfor %}
         </tr>

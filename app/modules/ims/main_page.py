@@ -237,6 +237,13 @@ class ShopsStats(Resource):
                 'static_url': 'http://2py.eu:9080/',
                 'menu': menu,
                 'fields': fields,
+                'fields_name': [
+                    'Entry point ID',
+                    'Shop url',
+                    'T - 2 days',
+                    'T - 1 day',
+                    'Today',
+                ]
             },
             entities=entities
         )

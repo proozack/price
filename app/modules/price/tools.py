@@ -7,59 +7,35 @@ import logging
 log = logging.getLogger(__name__)
 
 
-class ProductTools():
-    def __init__(self):
-        self.bdbu = BrandDbUtils()
-        self.brands_list = self.bdbu.get_all_brand_as_list()
-
-    def search_brand(self, title):
-        title_list = title.split(' ')
-        for title_element in title_list:
-            if title_element.lower() in self.brands_list:
-                return title_element
-        return False
-
-    def remove_brand_from_title(self, title, manufacturer):
-        result = self.search_brand(title)
-        if not result:
-            result = ''
-        return (
-            title.replace(
-                result,
-                ''
-            ).strip(),
-            None if result == '' else result,
-            manufacturer
-        )
-
-
 class CategoryTools():
     def __init__(self, category_id):
         self.kwldu = KeyWordLinkDbUtils()
         self.category_id = category_id
-        self.category_synonyms = self.kwldu.get_word_by_category(category_id)
+        self.category_synonyms = self.kwldu.get_all_word()
 
     def search_catgeory_name(self, title):
-        """
-        this cod is wrong shoul by rfactoring
-        należy przewidzieć wielowyrazowe nazwy producentów ; pioniższy kod nie uwzględnia tego
-        """
-        title_list = title.split(' ')
-        for title_element in title_list:
-            if title_element.lower() in self.category_synonyms:
-                return title_element
-        return False
-
-    def remove_category_from_title(self, title):
-        result = self.search_catgeory_name(title)
-        if not result:
-            result = ''
+        find_category = ''
+        find_category_id = None
+        for synonym, category_id, word_id in self.category_synonyms:
+            wyn = title.lower().find(synonym)
+            if wyn >= 0:
+                if len(find_category) <= len(synonym):
+                    find_category = synonym
+                    find_category_id = category_id
         return (
-            title.replace(
-                result,
+            find_category if find_category != '' else None,
+            find_category_id
+        )
+
+    def remove_category_from_title(self, title, category_name):
+        if not category_name:
+            category_name = ''
+        return (
+            title.lower().replace(
+                category_name,
                 ''
-            ).strip(),
-            None if result == '' else result,
+            ).strip().capitalize(),
+            None if category_name == '' else category_name,
         )
 
 
@@ -68,7 +44,7 @@ class OfertTools():
         pass
 
     def parse_title_by_category(self, category_id):
-        p = ProductTools()
+        p = BrandTools()
         o = OfertDbUtils()
         for ofert in o.get_all_ofert_by_category(category_id):
             name = ofert[1]
@@ -79,7 +55,8 @@ class OfertTools():
 
 class BrandTools():
     def __init__(self):
-        pass
+        self.bdbu = BrandDbUtils()
+        self.brands_list = self.bdbu.get_all_brand_as_list()
 
     def enrich_brands_list(self, category_id: int):
         odbu = OfertDbUtils()
@@ -111,3 +88,21 @@ class BrandTools():
                 bdbu.add_brand(ins)
             else:
                 log.info('Skipping add new brand %r', name)
+
+    def search_brand(self, title):
+        found_brand = ''
+        for brand in self.brands_list:
+            result = title.lower().find(brand)
+            if result >= 0:
+                if len(found_brand) <= len(brand):
+                    found_brand = brand
+        return found_brand if found_brand != '' else False
+
+    def remove_brand_from_title(self, title, manufacturer):
+        result = self.search_brand(title)
+        new_title = title.lower().replace(result if result else '', '').strip()
+        return (
+            new_title.capitalize(),
+            None if result == '' else result,
+            manufacturer
+        )

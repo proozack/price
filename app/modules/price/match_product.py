@@ -1,7 +1,7 @@
 import pprint
 from app.utils.local_type import Ofert, TempProduct
-from app.modules.price.db_utils import OfertDbUtils
-from app.modules.price.tools import ProductTools, CategoryTools
+from app.modules.price.db_utils import OfertDbUtils, CategoryDbUtils
+from app.modules.price.tools import BrandTools, CategoryTools
 
 import logging
 log = logging.getLogger(__name__)
@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 class MatchProduct():
     def __init__(self):
-        self.pt = ProductTools()
+        self.pt = BrandTools()
 
     def parase_all_ofert(self, ofert_id=None) -> Ofert:
         odbu = OfertDbUtils()
@@ -33,9 +33,22 @@ class MatchProduct():
 
     def _serch_category_in_title(Self, tp_object: TempProduct) -> TempProduct:
         ct = CategoryTools(tp_object.category_id)
-        # category_synonyms = ct.search_catgeory_name(tp_object.title)
-        title = ct.remove_category_from_title(tp_object.title)
+        category_synonyms, category_id = ct.search_catgeory_name(tp_object.title)
+        title = ct.remove_category_from_title(tp_object.title, category_synonyms)
         tp_object.title = title[0]
+        if category_id:
+            cdbu = CategoryDbUtils()
+            new_category_name = cdbu.get_category_name_by_id(category_id)
+            log.info(
+                'Change category from {}(id:{}) to {}(id:{})'.format(
+                    tp_object.category_name,
+                    tp_object.category_id,
+                    new_category_name,
+                    category_id
+                )
+            )
+            tp_object.category_id = category_id
+            tp_object.category_name = new_category_name
         return tp_object
 
     def parse_offert(self, ofert):
