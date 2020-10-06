@@ -1,7 +1,9 @@
 from app import db
 from sqlalchemy import and_
-from app.modules.price.models import (EntryPoint, Shop, Category, Ofert, Brand, Product, KeyWord, KeyWordLink, MetaCategory) # noqa E501
+from app.modules.price.models import (EntryPoint, Shop, Category, Ofert, Brand, Product, KeyWord, KeyWordLink, MetaCategory, Image, ProductPrice) # noqa E501
 from app.utils.url_utils import UrlUtils
+from app.utils.local_type import TempProduct
+from app.utils.db_transaction import commit_section, commit_after_execution
 
 import logging
 log = logging.getLogger(__name__)
@@ -115,7 +117,7 @@ class OfertDbUtils():
             for ent in result
         ]
 
-    def get_all_oferts(self, ofert_id=None):
+    def get_all_oferts(self, ofert_id=None, shop_id=None):
         o = db.session.query(
             Ofert.id,
             Ofert.title,
@@ -127,7 +129,13 @@ class OfertDbUtils():
             Category.id.label('category_id'),
             Category.name.label('category_name'),
             Shop.id.label('shop_id'),
-            Shop.url.label('shop_url')
+            Shop.url.label('shop_url'),
+            Image.control_sum,
+            Ofert.creation_date.label('product_date'),
+            Image.dimension,
+            Image.size,
+            Image.orientation,
+            Image.main_color
         ).join(
             EntryPoint,
             EntryPoint.id == Ofert.entry_point_id
@@ -137,9 +145,14 @@ class OfertDbUtils():
         ).join(
             Shop,
             Shop.id == EntryPoint.shop_id
+        ).join(
+            Image,
+            Image.image == Ofert.image
         )
         if ofert_id:
             o = o.filter(Ofert.id == ofert_id)
+        if shop_id:
+            o = o.filter(Shop.id == shop_id)
         return o.all()
 
 
@@ -168,17 +181,55 @@ class BrandDbUtils():
             Brand.name == name
         ).first()
 
+    def get_brand_id_by_name(self, name):
+        """Synonym for method is_brand_exists"""
+        return self.is_brand_exists(name)
+
 
 class ProductDbUtils():
+    """
     def add_product(self, name, brand_id, category_id):
         p = Product(name, brand_id, category_id)
         db.session.add(p)
         db.session.commit()
+    """
+
+    def if_product_exists(self, name, brand_id, category_id):
+        return db.session.query(
+            Product.id
+        ).filter(
+            Product.name == name,
+            Product.brand_id == brand_id,
+            Product.category_id == category_id,
+            Product.active == True, # noqa E712
+            Product.deleted == False
+        ).first()
+
+    @commit_after_execution
+    def add_product(self, tp: TempProduct): # noqa F811
+        bdbu = BrandDbUtils()
+        ppdbu = ProductPriceDbUtils()
+
+        brand_id = bdbu.get_brand_id_by_name(tp.manufacturer)
+        log.info('Tp object %r', tp.get_dict())
+        log.info('Brand ID %r', brand_id)
+        product_found = self.if_product_exists(tp.title, brand_id, tp.category_id)
+        if not product_found:
+            p = Product(tp.title, brand_id, tp.category_id, tp.slug)
+            db.session.add(p)
+            db.session.flush()
+            product_found = p.id
+        else:
+            log.warning('Product exists %r on ID = %r', tp.title, product_found.id)
+
+        ppdbu.add_price_to_product(product_found, tp.shop_id, tp.price, tp.product_date)
 
 
 class ProductPriceDbUtils():
-    def add_product_price(self):
-        pass
+    def add_price_to_product(self, product_id, shop_id, price, date_price):
+        pp = ProductPrice(product_id, shop_id, price, date_price)
+        db.session.add(pp)
+        db.session.flush()
 
 
 class KeyWordDbUtils():

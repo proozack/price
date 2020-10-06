@@ -202,13 +202,13 @@ class ShopsStats(Resource):
                 FROM price_ofert AS o
                 JOIN price_entry_point AS ep ON ep.id = o.entry_point_id
                 JOIN price_shop AS s ON s.id = ep.shop_id
-                WHERE o.creation_date::date = CURRENT_DATE -1
+                WHERE o.creation_date::date = CURRENT_DATE -2
                 GROUP BY ep.id, s.url
         )
         SELECT
                 ep.id,
                 ps.url AS shop_name,
-                coalesce(s1.ile,0) AS "t2",
+                coalesce(s2.ile,0) AS "t2",
                 coalesce(s1.ile,0) AS "t1",
                 coalesce(s.ile,0) AS "t0"
         FROM price_shop  AS ps

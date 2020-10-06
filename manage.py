@@ -73,16 +73,18 @@ def run_downloading(enty_point_id=None):
 
 
 @manager.command
-def parse_ofert(ofert_id=None):
+def parse_ofert(ofert_id=None, shop_id=None):
     """
     Run parasing all ofert storage in price_ofert
     """
     if ofert_id:
         log.info('Run parasing ofert: Ofert_id:{}'.format(ofert_id))
+    elif shop_id:
+        log.info('Run parasing ofert: Shop_id:{}'.format(shop_id))
     else:
         log.info('Run parasing all oferts')
     s = PriceServices()
-    s.parase_ofert(ofert_id)
+    s.parase_ofert(ofert_id, shop_id)
 
 
 @manager.command
