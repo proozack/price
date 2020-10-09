@@ -247,10 +247,11 @@ class Product(DbUtils):
     description = Column(Text, nullable=True, comment='A description of the item')
     slug = Column(Text, nullable=False, comment='Slug of product for url, include category name')
 
-    def __init__(self, name, brand_id, category_id):
+    def __init__(self, name, brand_id, category_id, slug):
         self.brand_id = brand_id
         self.name = name
         self.category_id = category_id
+        self.slug = slug
 
     def __repr__(self):
         return '<Product {}> Brand ID: {}'.format(self.name, self.brand_id)
@@ -336,7 +337,7 @@ class ProductPrice(DbUtils):
     )
     shop_id = Column(
         Integer,
-        ForeignKey("price_repo_image.id"),
+        ForeignKey("price_shop.id"),
         nullable=False,
         comment='FK to images repository'
     )

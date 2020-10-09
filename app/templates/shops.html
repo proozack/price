@@ -14,7 +14,7 @@
     <table id="shops" class="display">
         <thead>
         <tr>
-        {% for field in resource['fields'] -%}
+        {% for field in resource.fields_name -%}
             <th>{{ field }}</th>
         {% endfor %}
         </tr>
@@ -32,7 +32,9 @@
 </div>
 <script>
 $(document).ready( function () {
-    $('#shops').DataTable();
+    $('#shops').DataTable({
+          "pageLength": 50
+    });
 } );
 </script>
 {% endblock %}

@@ -1,7 +1,10 @@
 from app import db
 from sqlalchemy import and_
-from app.modules.price.models import (EntryPoint, Shop, Category, Ofert, Brand, Product, KeyWord, KeyWordLink)
+from app.modules.price.models import (EntryPoint, Shop, Category, Ofert, Brand, Product, KeyWord, KeyWordLink, MetaCategory, Image, ProductPrice, TagWordLink) # noqa E501
 from app.utils.url_utils import UrlUtils
+from app.utils.local_type import TempProduct
+from app.utils.db_transaction import commit_after_execution
+# from app.utils.db_transaction import commit_section
 
 import logging
 log = logging.getLogger(__name__)
@@ -51,7 +54,7 @@ class EntryPointsDbUtils():
             sdu = ShopDbUtils()
             shop_id = sdu.add_new_shop(u.domain)
             ep = EntryPoint(entry_point, category_id, shop_id)
-            log.info('Added new entry point %r for catgeory_id: %r,  shop_id: %r', entry_point,  category_id, shop_id)
+            log.info('Added new entry point %r for category_id: %r,  shop_id: %r', entry_point,  category_id, shop_id)
             db.session.add(ep)
             db.session.commit()
         else:
@@ -115,7 +118,7 @@ class OfertDbUtils():
             for ent in result
         ]
 
-    def get_all_oferts(self, ofert_id=None):
+    def get_all_oferts(self, ofert_id=None, shop_id=None):
         o = db.session.query(
             Ofert.id,
             Ofert.title,
@@ -127,7 +130,13 @@ class OfertDbUtils():
             Category.id.label('category_id'),
             Category.name.label('category_name'),
             Shop.id.label('shop_id'),
-            Shop.url.label('shop_url')
+            Shop.url.label('shop_url'),
+            Image.control_sum,
+            Ofert.creation_date.label('product_date'),
+            Image.dimension,
+            Image.size,
+            Image.orientation,
+            Image.main_color
         ).join(
             EntryPoint,
             EntryPoint.id == Ofert.entry_point_id
@@ -137,9 +146,14 @@ class OfertDbUtils():
         ).join(
             Shop,
             Shop.id == EntryPoint.shop_id
+        ).join(
+            Image,
+            Image.image == Ofert.image
         )
         if ofert_id:
             o = o.filter(Ofert.id == ofert_id)
+        if shop_id:
+            o = o.filter(Shop.id == shop_id)
         return o.all()
 
 
@@ -168,17 +182,55 @@ class BrandDbUtils():
             Brand.name == name
         ).first()
 
+    def get_brand_id_by_name(self, name):
+        """Synonym for method is_brand_exists"""
+        return self.is_brand_exists(name)
+
 
 class ProductDbUtils():
+    """
     def add_product(self, name, brand_id, category_id):
         p = Product(name, brand_id, category_id)
         db.session.add(p)
         db.session.commit()
+    """
+
+    def if_product_exists(self, name, brand_id, category_id):
+        return db.session.query(
+            Product.id
+        ).filter(
+            Product.name == name,
+            Product.brand_id == brand_id,
+            Product.category_id == category_id,
+            Product.active == True, # noqa E712
+            Product.deleted == False
+        ).first()
+
+    @commit_after_execution
+    def add_product(self, tp: TempProduct): # noqa F811
+        bdbu = BrandDbUtils()
+        ppdbu = ProductPriceDbUtils()
+
+        brand_id = bdbu.get_brand_id_by_name(tp.manufacturer)
+        log.info('Tp object %r', tp.get_dict())
+        log.info('Brand ID %r', brand_id)
+        product_found = self.if_product_exists(tp.title, brand_id, tp.category_id)
+        if not product_found:
+            p = Product(tp.title, brand_id, tp.category_id, tp.slug)
+            db.session.add(p)
+            db.session.flush()
+            product_found = p.id
+        else:
+            log.warning('Product exists %r on ID = %r', tp.title, product_found.id)
+
+        ppdbu.add_price_to_product(product_found, tp.shop_id, tp.price, tp.product_date)
 
 
 class ProductPriceDbUtils():
-    def add_product_price(self):
-        pass
+    def add_price_to_product(self, product_id, shop_id, price, date_price):
+        pp = ProductPrice(product_id, shop_id, price, date_price)
+        db.session.add(pp)
+        db.session.flush()
 
 
 class KeyWordDbUtils():
@@ -206,6 +258,16 @@ class KeyWordLinkDbUtils():
         db.session.add(kwl)
         db.session.commit()
 
+    def get_all_word(self):
+        return db.session.query(
+            KeyWord.value,
+            KeyWordLink.category_id,
+            KeyWord.id
+        ).join(
+            KeyWordLink,
+            KeyWordLink.key_word_id == KeyWord.id
+        ).all()
+
     def get_word_by_category(self, category_id):
         words = db.session.query(
             KeyWord.value
@@ -218,4 +280,60 @@ class KeyWordLinkDbUtils():
         return [
             word[0]
             for word in words
+        ]
+
+
+class CategoryDbUtils():
+    def add_category(self, name, meta_category_id):
+        catgeory = Category(name, meta_category_id)
+        db.session.add(catgeory)
+        db.session.commit()
+        return catgeory.id
+
+    def get_all_category(self):
+        return db.session.query(
+            Category.id.label('category_id'),
+            Category.name.label('category_name'),
+            MetaCategory.id.label('metacategory_id'),
+            MetaCategory.name.label('meta_category_name')
+        ).join(
+            MetaCategory,
+            MetaCategory.id == Category.meta_category_id
+        ).all()
+
+    def get_category_name_by_id(self, category_id):
+        catgeory = db.session.query(
+            Category.name
+        ).filter(
+            Category.id == category_id
+        ).first()
+        return catgeory[0]
+
+
+class TagWordLinkDbUtils():
+
+    @commit_after_execution
+    def add_tag(self, name, product_id):
+        kwdu = KeyWordDbUtils()
+        result = kwdu.if_word_exists(name)
+        if result:
+            word_id = result
+        else:
+            word_id = kwdu.add_word(name)
+        twl = TagWordLink(product_id, word_id)
+        db.session.add(twl)
+
+    def get_tags(self):
+        tags = db.session.query(
+            KeyWord.value
+        ).join(
+            KeyWordLink,
+            KeyWordLink.key_word_id == KeyWord.id,
+            isouter=True
+        ).filter(
+            KeyWordLink.id.is_(None)
+        ).all()
+        return [
+            tag[0]
+            for tag in tags
         ]

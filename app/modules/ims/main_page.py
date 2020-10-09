@@ -177,45 +177,39 @@ class ShopsStats(Resource):
         _sql = """
         WITH stat AS (
                 SELECT
-                        s.url,
+                        ep.id,
+                        ep.shop_id,
+                        ep.url,
+                        o.creation_date::date AS c_date,
                         COUNT(o.id) as ile
                 FROM price_ofert AS o
                 JOIN price_entry_point AS ep ON ep.id = o.entry_point_id
                 JOIN price_shop AS s ON s.id = ep.shop_id
-                WHERE o.creation_date::date = CURRENT_DATE
-                GROUP BY ep.id, s.url
-        ),
-        stat_1 AS (
-        SELECT
-                        s.url,
-                        COUNT(o.id) as ile
-                FROM price_ofert AS o
-                JOIN price_entry_point AS ep ON ep.id = o.entry_point_id
-                JOIN price_shop AS s ON s.id = ep.shop_id
-                WHERE o.creation_date::date = CURRENT_DATE -1
-                GROUP BY ep.id, s.url
-        ),
-        stat_2 AS (
-        SELECT
-                        s.url,
-                        COUNT(o.id) as ile
-                FROM price_ofert AS o
-                JOIN price_entry_point AS ep ON ep.id = o.entry_point_id
-                JOIN price_shop AS s ON s.id = ep.shop_id
-                WHERE o.creation_date::date = CURRENT_DATE -1
-                GROUP BY ep.id, s.url
+                WHERE o.creation_date::date > CURRENT_DATE - 4
+                GROUP BY ep.id, ep.url, ep.shop_id, o.creation_date::date
         )
         SELECT
-                ep.id,
-                ps.url AS shop_name,
-                coalesce(s1.ile,0) AS "t2",
-                coalesce(s1.ile,0) AS "t1",
-                coalesce(s.ile,0) AS "t0"
-        FROM price_shop  AS ps
-        JOIN price_entry_point AS ep ON ep.shop_id = ps.id
-        LEFT JOIN stat AS s ON s.url = ps.url
-        LEFT JOIN stat_1 AS s1 ON s1.url = ps.url
-        LEFT JOIN stat_2 AS s2 ON s2.url = ps.url
+                pep.id as ep_id,
+                ps.url,
+                COALESCE(s3.ile, 0) AS i3,
+                COALESCE(s2.ile, 0) AS i2,
+                COALESCE(s1.ile, 0) AS i1,
+                COALESCE(s0.ile, 0) AS i0,
+                CASE
+                        WHEN COALESCE(s0.ile, 0) > COALESCE(s1.ile, 0) THEN '↑'
+                        WHEN COALESCE(s0.ile, 0) < COALESCE(s1.ile, 0) THEN '↓'
+                ELSE
+                        '='
+                END as dynamic
+        FROM price_shop AS ps
+        JOIN price_entry_point AS pep ON pep.shop_id = ps.id
+        LEFT JOIN stat As s0 ON s0.id = pep.id AND s0.c_date = CURRENT_DATE
+        LEFT JOIN stat As s1 ON s1.id = pep.id AND s1.c_date = CURRENT_DATE - 1
+        LEFT JOIN stat As s2 ON s2.id = pep.id AND s2.c_date = CURRENT_DATE - 2
+        LEFT JOIN stat As s3 ON s3.id = pep.id AND s3.c_date = CURRENT_DATE - 3
+        WHERE ps.active = True
+        AND ps.deleted = False
+        ORDER BY ps.url
         """
         result = db.engine.execute(_sql)
 
@@ -237,6 +231,15 @@ class ShopsStats(Resource):
                 'static_url': 'http://2py.eu:9080/',
                 'menu': menu,
                 'fields': fields,
+                'fields_name': [
+                    'Entry point ID',
+                    'Shop url',
+                    'T - 3 days',
+                    'T - 2 days',
+                    'T - 1 day',
+                    'Today',
+                    'Dynamic',
+                ]
             },
             entities=entities
         )

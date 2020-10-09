@@ -1,12 +1,10 @@
 from bs4 import BeautifulSoup
-# import pprint
+from importlib import import_module
 
 from .parser import AbstractParser
 from app.utils.download_utils import SmallResponseObject
 from . import parsers_collection as pcoll
 from .collection_of_catalogs_parsers import catalogs_parser_wrapper
-# div_catalogs_parser, article_catalogs_parser
-from .data_digger import (DomodiPl, IntimitiPl, NoshamePl, SwiatbieliznyPl, IntymnaPl, OhsoPl, ByannPl, KontriPl, SensualePl, ELadyPl, UlubionabieliznaPl, MagicznabieliznaPl, EkskluzywnaPl, EldarPl, AnaisApparelPl, MorgantiPl) # noqa F401
 
 import logging
 log = logging.getLogger(__name__)
@@ -23,7 +21,10 @@ class GaleryParser(AbstractParser):
         self._response_object = value
         self._soup = BeautifulSoup(value.get_contents(), features="html.parser")
         domain_parser_class = self._response_object.domain.title().replace('.', '').replace('-', '')
-        self.m = globals()[domain_parser_class](self._response_object)
+        module = import_module('app.modules.price.parser.data_digger')
+        mod = getattr(module, domain_parser_class)
+        self.m = mod(self._response_object)
+        log.info('Run module {}'.format(mod))
 
     def get_list_links_from_page(self) -> list:
         link_list = [
@@ -68,6 +69,12 @@ class GaleryParser(AbstractParser):
             'magicznabielizna.pl': 'div_multi_class',
             'ekskluzywna.pl': 'div_class_one',
             'eldar.pl': 'div_product',
+            'dobra-bielizna.pl': 'div_product',
+            'www.jagna.pl': 'table_tbl_prod_lst',
+            'atrakcyjna.pl': 'div_product_wrapper_sub',
+            'skryte.pl': 'div_product-container',
+            'all-bielizna.pl': 'figure_product-tile',
+            'www.dlazmyslow.pl': 'div_class_rowitem',
         }
 
         for wyn in self._soup.find_all('article'):
@@ -79,7 +86,13 @@ class GaleryParser(AbstractParser):
         if self._response_object.domain in manual_assignment_dict.keys():
             parsers_type = manual_assignment_dict.get(self._response_object.domain)
 
-        for field in catalogs_parser_wrapper(parsers_type, self._soup):
+        if hasattr(self.m, 'parse_catalog'):
+            for field in self.m.parse_catalog(self._soup):
+                self._run_parse_entity(result, field)
+        else:
+            for field in catalogs_parser_wrapper(parsers_type, self._soup):
+                self._run_parse_entity(result, field)
+            """
             wyn = self.m.parse_entity(field)
             log.info('%r', wyn)
             if wyn:
@@ -89,8 +102,19 @@ class GaleryParser(AbstractParser):
                     log.warning('Jedno z pól jest nie zaimplementowane')
             else:
                 log.warning('Pole jest puste, %r', field)
-
+            """
         return result
+
+    def _run_parse_entity(self, result, field):
+        wyn = self.m.parse_entity(field)
+        log.info('%r', wyn)
+        if wyn:
+            if wyn.title != NotImplemented and wyn.price != NotImplemented and wyn.url != NotImplemented and wyn.image != NotImplemented and wyn.manufacturer != NotImplemented and wyn.currency != NotImplemented: # noqa E501
+                result.append(wyn)
+            else:
+                log.warning('Jedno z pól jest nie zaimplementowane')
+        else:
+            log.warning('Pole jest puste, %r', field)
 
     def get_next_page(self):
         return self.m.get_next(self._soup)

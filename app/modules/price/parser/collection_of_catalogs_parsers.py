@@ -121,6 +121,31 @@ def div_class_one_parser(_soup):
         yield field
 
 
+def table_tbl_prod_lst(_soup):
+    for field in _soup.find_all(attrs={"class": "tblProdLst"}):
+        yield field
+
+
+def product_wrapper_sub(_soup):
+    for field in _soup.find_all(attrs={"class": "product_wrapper_sub"}):
+        yield field
+
+
+def product_container(_soup):
+    for field in _soup.find_all(attrs={"class": "product-container"}):
+        yield field
+
+
+def figure_product_tile(_soup):
+    for field in _soup.find_all('figure', {"class": "product-tile"}):
+        yield field
+
+
+def div_class_rowitem(_soup):
+    for field in _soup.find_all('div', {"class": "rowitem"}):
+        yield field
+
+
 def catalogs_parser_wrapper(parser_type, soup):
     parsers_type_method = {
         'div': div_catalogs_parser,
@@ -134,6 +159,11 @@ def catalogs_parser_wrapper(parser_type, soup):
         'div_product_box': div_product_box_parser,
         'div_multi_class': div_multi_class,
         'div_class_one': div_class_one_parser,
+        'table_tbl_prod_lst': table_tbl_prod_lst,
+        'div_product_wrapper_sub': product_wrapper_sub,
+        'div_product-container': product_container,
+        'figure_product-tile': figure_product_tile,
+        'div_class_rowitem': div_class_rowitem,
     }
     for field in parsers_type_method[parser_type](soup):
         yield field
