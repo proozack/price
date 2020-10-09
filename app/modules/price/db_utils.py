@@ -1,9 +1,10 @@
 from app import db
 from sqlalchemy import and_
-from app.modules.price.models import (EntryPoint, Shop, Category, Ofert, Brand, Product, KeyWord, KeyWordLink, MetaCategory, Image, ProductPrice) # noqa E501
+from app.modules.price.models import (EntryPoint, Shop, Category, Ofert, Brand, Product, KeyWord, KeyWordLink, MetaCategory, Image, ProductPrice, TagWordLink) # noqa E501
 from app.utils.url_utils import UrlUtils
 from app.utils.local_type import TempProduct
-from app.utils.db_transaction import commit_section, commit_after_execution
+from app.utils.db_transaction import commit_after_execution
+# from app.utils.db_transaction import commit_section
 
 import logging
 log = logging.getLogger(__name__)
@@ -307,3 +308,32 @@ class CategoryDbUtils():
             Category.id == category_id
         ).first()
         return catgeory[0]
+
+
+class TagWordLinkDbUtils():
+
+    @commit_after_execution
+    def add_tag(self, name, product_id):
+        kwdu = KeyWordDbUtils()
+        result = kwdu.if_word_exists(name)
+        if result:
+            word_id = result
+        else:
+            word_id = kwdu.add_word(name)
+        twl = TagWordLink(product_id, word_id)
+        db.session.add(twl)
+
+    def get_tags(self):
+        tags = db.session.query(
+            KeyWord.value
+        ).join(
+            KeyWordLink,
+            KeyWordLink.key_word_id == KeyWord.id,
+            isouter=True
+        ).filter(
+            KeyWordLink.id.is_(None)
+        ).all()
+        return [
+            tag[0]
+            for tag in tags
+        ]

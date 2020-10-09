@@ -73,6 +73,8 @@ class GaleryParser(AbstractParser):
             'www.jagna.pl': 'table_tbl_prod_lst',
             'atrakcyjna.pl': 'div_product_wrapper_sub',
             'skryte.pl': 'div_product-container',
+            'all-bielizna.pl': 'figure_product-tile',
+            'www.dlazmyslow.pl': 'div_class_rowitem',
         }
 
         for wyn in self._soup.find_all('article'):
@@ -84,7 +86,13 @@ class GaleryParser(AbstractParser):
         if self._response_object.domain in manual_assignment_dict.keys():
             parsers_type = manual_assignment_dict.get(self._response_object.domain)
 
-        for field in catalogs_parser_wrapper(parsers_type, self._soup):
+        if hasattr(self.m, 'parse_catalog'):
+            for field in self.m.parse_catalog(self._soup):
+                self._run_parse_entity(result, field)
+        else:
+            for field in catalogs_parser_wrapper(parsers_type, self._soup):
+                self._run_parse_entity(result, field)
+            """
             wyn = self.m.parse_entity(field)
             log.info('%r', wyn)
             if wyn:
@@ -94,8 +102,19 @@ class GaleryParser(AbstractParser):
                     log.warning('Jedno z pól jest nie zaimplementowane')
             else:
                 log.warning('Pole jest puste, %r', field)
-
+            """
         return result
+
+    def _run_parse_entity(self, result, field):
+        wyn = self.m.parse_entity(field)
+        log.info('%r', wyn)
+        if wyn:
+            if wyn.title != NotImplemented and wyn.price != NotImplemented and wyn.url != NotImplemented and wyn.image != NotImplemented and wyn.manufacturer != NotImplemented and wyn.currency != NotImplemented: # noqa E501
+                result.append(wyn)
+            else:
+                log.warning('Jedno z pól jest nie zaimplementowane')
+        else:
+            log.warning('Pole jest puste, %r', field)
 
     def get_next_page(self):
         return self.m.get_next(self._soup)

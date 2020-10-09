@@ -1,10 +1,33 @@
 import requests
 from bs4 import BeautifulSoup
-from app.modules.price.db_utils import BrandDbUtils, OfertDbUtils, KeyWordLinkDbUtils
+from app.modules.price.db_utils import BrandDbUtils, OfertDbUtils, KeyWordLinkDbUtils, TagWordLinkDbUtils
 from app.utils.url_utils import UrlUtils
 
 import logging
 log = logging.getLogger(__name__)
+
+
+class TagTools():
+    def __init__(self):
+        self.twldu = TagWordLinkDbUtils()
+        self.tags_list = self.twldu.get_tags()
+
+    def search_tag(self, title):
+        found_tag = ''
+        for tag in self.tags_list:
+            result = title.lower().find(tag)
+            if result >= 0:
+                if len(found_tag) <= len(tag):
+                    found_tag = tag
+        return found_tag if found_tag != '' else None
+
+    def remove_tag_from_title(self, title, tag) -> str:
+        # result = self.search_tag(title)
+        new_title = title.lower().replace(tag if tag else '', '').strip()
+        return (
+            new_title.capitalize(),
+            tag
+        )
 
 
 class CategoryTools():
@@ -96,7 +119,7 @@ class BrandTools():
             if result >= 0:
                 if len(found_brand) <= len(brand):
                     found_brand = brand
-        return found_brand if found_brand != '' else False
+        return found_brand if found_brand != '' else None
 
     def remove_brand_from_title(self, title, manufacturer):
         result = self.search_brand(title)

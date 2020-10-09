@@ -43,7 +43,9 @@ class UrlUtils():
 
     def get_attr_from_url(self, url):
         atributs = self.get_url_string(url).split('?')
-        return atributs[1]
+        if len(atributs) >= 2:
+            return atributs[1]
+        return None
 
     def get_dicts_from_args(self, url):
         url_string = self.get_attr_from_url(url)

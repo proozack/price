@@ -30,6 +30,7 @@ def create_app():
     # SESSION_TYPE = 'redis'
     # session = Session(app)
     app.config.from_object(Config)
+    app.config["SQLALCHEMY_ECHO"] = False
     db.init_app(app)
     login_manager.init_app(app)
     # session.init_app(app)
