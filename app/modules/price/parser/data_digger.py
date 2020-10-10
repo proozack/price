@@ -1464,3 +1464,96 @@ class WwwEsotiqCom():
             url = ''.join([path, str(inc)])
             return url
         return None
+
+
+class Www2HmCom():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        for field in soup.find_all('div', {"class": "item-details"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+
+        log.info('RAW:\n%r\n_____________\n', soup)
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        log.info('SOUP:\n%r', soup)
+        return None
+
+
+class EroprezentPl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        for field in soup.find_all('li', {"class": "product"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+        raw_title = soup.find('h2', {'class': 'woocommerce-loop-product__title'})
+        if raw_title:
+            title = raw_title.text.strip()
+        raw_url = soup.find('a', {'class': 'woocommerce-LoopProduct-link'})
+        if raw_url:
+            address = raw_url.get('href')
+        raw_img = soup.find('img', {'loading': 'lazy'})
+        if raw_img:
+            img = raw_img.get('data-src')
+
+        raw_prices = soup.find_all('span', {'class': 'woocommerce-Price-amount'})
+        if raw_prices:
+            for raw_price in raw_prices:
+                tmp_price = raw_price.text.split('\xa0')
+                price = tmp_price[0].strip().replace(',', '.')
+                currency = tmp_price[1].strip()
+        manufacturer = None
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        raw_pagination = soup.find('a', {'class': 'next'})
+        if raw_pagination:
+            link = raw_pagination.get('href')
+            return link
+        return None
+
+
+class NbieliznaPl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        for field in soup.find_all('article', {"class": "productBox_product"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+
+        log.info('RAW:\n%r\n_____________\n', soup)
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        log.info('SOUP:\n%r', soup)
+        return None
