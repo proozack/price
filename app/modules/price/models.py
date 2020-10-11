@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Float, Integer, Text, ForeignKey, String, Numeric, Date
+from sqlalchemy import Column, Float, Integer, Text, ForeignKey, String, Numeric, Date, Boolean
 from sqlalchemy import Sequence
 from app.utils.models import DbUtils
 from app import db
@@ -122,10 +122,12 @@ class Shop(DbUtils):
 
     id = Column(Integer, Sequence(__seqname__), primary_key=True)
     url = Column(Text, nullable=False, comment='Url to shops page', unique=True)
+    is_brand_shop = Column(Boolean, nullable=True, comment='Information about is a brand shop or no')
 
     def __init__(self, url=None, created_by=None):
         self.url = url
         self.created_by = created_by
+        self.is_brand_shop = False
 
     def __repr__(self):
         return '<Shop %r>' % (self.url)

@@ -1,5 +1,6 @@
 from app import db
 from sqlalchemy import and_
+from sqlalchemy.sql.expression import func
 from app.modules.price.models import (EntryPoint, Shop, Category, Ofert, Brand, Product, KeyWord, KeyWordLink, MetaCategory, Image, ProductPrice, TagWordLink) # noqa E501
 from app.utils.url_utils import UrlUtils
 from app.utils.local_type import TempProduct
@@ -121,7 +122,7 @@ class OfertDbUtils():
     def get_all_oferts(self, ofert_id=None, shop_id=None):
         o = db.session.query(
             Ofert.id,
-            Ofert.title,
+            func.lower(Ofert.title).label('title'),
             Ofert.url,
             Ofert.image,
             Ofert.price,
@@ -134,9 +135,10 @@ class OfertDbUtils():
             Image.control_sum,
             Ofert.creation_date.label('product_date'),
             Image.dimension,
-            Image.size,
+            Image.size.label('img_size'),
             Image.orientation,
-            Image.main_color
+            Image.main_color,
+            Shop.is_brand_shop
         ).join(
             EntryPoint,
             EntryPoint.id == Ofert.entry_point_id

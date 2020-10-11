@@ -13,21 +13,48 @@ class TagTools():
         self.tags_list = self.twldu.get_tags()
 
     def search_tag(self, title):
-        found_tag = ''
+        found_tag = []
         for tag in self.tags_list:
-            result = title.lower().find(tag)
+            result = title.find(tag)
             if result >= 0:
-                if len(found_tag) <= len(tag):
-                    found_tag = tag
-        return found_tag if found_tag != '' else None
+                found_tag.append(tag)
 
-    def remove_tag_from_title(self, title, tag) -> str:
-        # result = self.search_tag(title)
-        new_title = title.lower().replace(tag if tag else '', '').strip()
+        return found_tag if found_tag else None
+
+    def remove_tag_from_title(self, title, tag_list) -> str:
+        tag_list.sort(key=len, reverse=True)
+        for tag in tag_list:
+            title = title.replace(tag if tag else '', '').strip()
         return (
-            new_title.capitalize(),
-            tag
+            title,
+            tag_list
         )
+
+
+class SizeTools():
+    def __init__(self):
+        self.size_list = [
+            's',
+            'm',
+            'l',
+            'xl',
+            'xxl',
+            'xxxl',
+        ]
+
+    def search_size_in_string(self, name):
+        found_size = []
+        tab_name = name.split(' ')
+        for size in self.size_list:
+            if size in tab_name:
+                found_size.append(size)
+        return found_size
+
+    def remove_size_from_string(self, name, size_list):
+        tab_name = name.split(' ')
+        for size in size_list:
+            tab_name.remove(size)
+        return ' '.join(tab_name)
 
 
 class CategoryTools():

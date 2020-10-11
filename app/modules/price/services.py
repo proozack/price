@@ -82,5 +82,5 @@ class Services():
     def parase_ofert(self, ofert_id=None, shop_id=None):
         mp = MatchProduct()
         for ofert in mp.parase_all_ofert(ofert_id, shop_id):
-            log.info('To jest ofert %r', ofert)
+            # log.info('To jest ofert %r', ofert)
             mp.parse_offert(ofert)

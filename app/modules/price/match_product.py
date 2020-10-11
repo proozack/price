@@ -1,6 +1,6 @@
 from app.utils.local_type import Ofert, TempProduct
 from app.modules.price.db_utils import OfertDbUtils, CategoryDbUtils, ProductDbUtils
-from app.modules.price.tools import BrandTools, CategoryTools, TagTools
+from app.modules.price.tools import BrandTools, CategoryTools, TagTools, SizeTools
 from slugify import slugify
 import pprint
 
@@ -12,6 +12,7 @@ class MatchProduct():
     def __init__(self):
         self.pt = BrandTools()
         self.pdbu = ProductDbUtils()
+        self.st = SizeTools()
         self.tt = TagTools()
         self.skip_characters = ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '-', '+', '+', '|', '\\', '{', '[', ']', '}', ':', ';', '"', '\'', '<', ',', '>', '.', '?', '/', '`', '~'] # noqa E501
 
@@ -23,6 +24,8 @@ class MatchProduct():
 
     def parse_offert(self, ofert):
         tp = TempProduct(**self.sa_obj_to_dict(ofert))
+        pp = pprint.PrettyPrinter(indent=4)
+        log.info('Przetwarzam %r', pp.pprint(tp.get_dict()))
         tp = self._parse_title(tp)
         # import pprint
         # pp = pprint.PrettyPrinter(indent=4)
@@ -54,6 +57,7 @@ class MatchProduct():
 
     def _parse_title(self, tp):
         tp = self._remove_bad_chars_in_title(tp)
+        tp = self._search_size_from_title(tp)
         if not tp.manufacturer:
             tp = self._serch_manufacturer_in_title(tp)
         tp = self._serch_category_in_title(tp)
@@ -71,12 +75,13 @@ class MatchProduct():
         return result
 
     def _search_tags_in_title(self, tp_object: TempProduct) -> TempProduct:
-        tag = self.tt.search_tag(tp_object.title)
-        title = self.tt.remove_tag_from_title(tp_object.title, tag)
-        if tp_object.title != title:
-            log.info('Tags: Change title from {} to {}'.format(tp_object.title, title[0]))
-            tp_object.title = title[0]
-            tp_object.add_field('tag', title[1])
+        tags_list = self.tt.search_tag(tp_object.title)
+        if tags_list:
+            title = self.tt.remove_tag_from_title(tp_object.title, tags_list)
+            if tp_object.title != title:
+                log.info('Tags: Change title from {} to {}'.format(tp_object.title, title[0]))
+                tp_object.title = title[0]
+                tp_object.add_field('tag', title[1])
         return tp_object
 
     def _serch_manufacturer_in_title(self, tp_object: TempProduct) -> TempProduct:
@@ -114,12 +119,22 @@ class MatchProduct():
                 return tp_object
         return tp_object
 
+    def _search_size_from_title(self, tp_object: TempProduct) -> TempProduct:
+        size_list = self.st.search_size_in_string(tp_object.title)
+        if size_list:
+            title = self.st.remove_size_from_string(tp_object.title, size_list)
+            if tp_object.title != title:
+                log.info('Size: Change title from {} to {}'.format(tp_object.title, title))
+                tp_object.title = title
+                tp_object.add_field('size', size_list)
+        return tp_object
+
     def _remove_bad_chars_in_title(self, tp_object: TempProduct) -> TempProduct:
         temp_title = tp_object.title
         for char in self.skip_characters:
             temp_title = temp_title.replace(char, ' ')
         if temp_title != tp_object.title:
-            log.info('Chaneg title from {} to {}'.format(tp_object.title, temp_title))
+            log.info('BadChar: Change title from {} to {}'.format(tp_object.title, temp_title))
             tp_object.title = temp_title
         return tp_object
 
@@ -129,7 +144,7 @@ class MatchProduct():
             tab.remove('')
         new_title = ' '.join(tab)
         if new_title != tp_object.title:
-            log.info('Change title from {} to {}'.format(tp_object.title, new_title))
+            log.info('RemoveSpace: Change title from {} to {}'.format(tp_object.title, new_title))
             tp_object.title = new_title
 
     def _save_product(self, tp_object):
