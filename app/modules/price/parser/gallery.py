@@ -100,6 +100,7 @@ class GaleryParser(AbstractParser):
                     result.append(wyn)
                 else:
                     log.warning('Jedno z pól jest nie zaimplementowane')
+
             else:
                 log.warning('Pole jest puste, %r', field)
             """

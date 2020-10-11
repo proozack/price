@@ -1,8 +1,37 @@
 from app.utils.local_type import Ofert
 from app.utils.url_utils import UrlUtils
+from requests import Request, Session
+import re
+import json
+from app.utils.bs_tools import get_soup_from_url
 
 import logging
 log = logging.getLogger(__name__)
+
+
+class WwwTestCom():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        for field in soup.find_all('article', {"class": "productBox_product"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+
+        log.info('RAW:\n%r\n_____________\n', soup)
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        log.info('SOUP:\n%r', soup)
+        return None
 
 
 class IntimitiPl():
@@ -435,49 +464,6 @@ class SensualePl():
                 result = field[0].get('href')
                 link = ''.join([self.response_object.protocol, '://', self.response_object.domain, result])
                 return link
-
-
-class ELadyPl():
-
-    def __init__(self, response_object):
-        self.response_object = response_object
-
-    def parse_entity(self, soup):
-        title = NotImplemented
-        price = NotImplemented
-        currency = NotImplemented
-        address = NotImplemented
-        img = NotImplemented
-
-        log.info('\n________________________________________\nTo jest SOUP %r', soup)
-        raw_ent = soup.findAll(attrs={"class": "prodimage f-row"})
-        log.info('\n________________________________________\nTo jest raw_ent %r', raw_ent)
-        if raw_ent:
-            title = raw_ent[0].get('title')
-            result = raw_ent[0].get('href')
-            address = ''.join([self.response_object.protocol, '://', self.response_object.domain, result])
-            raw_img = raw_ent[0].findAll('img')
-            if raw_img:
-                tmp_img = raw_img[0].get('data-src')
-                img = ''.join([self.response_object.protocol, '://', self.response_object.domain, tmp_img])
-        raw_price = soup.findAll('em')
-        if raw_price:
-            tmp_price = raw_price[1].text
-            price_as_str = tmp_price.strip()
-            tab_price = price_as_str.split('\xa0')
-            price = tab_price[0].replace(',', '.')
-            currency = tab_price[1]
-
-        o = Ofert(title, price, currency, address, img)
-        log.info('\n________________________________________\nTo jest O: %r', o)
-        return o
-
-    def get_next(self, soup):
-        next_page_raw = soup.findAll(attrs={"class": "next"})
-        if next_page_raw:
-            result = next_page_raw[0].get('href')
-            if result:
-                return ''.join([self.response_object.protocol, '://', self.response_object.domain, result])
 
 
 class UlubionabieliznaPl():
@@ -939,29 +925,6 @@ class SkrytePl():
         return None
 
 
-class WwwEsotiqCom():
-    def __init__(self, response_object):
-        self.response_object = response_object
-
-    def parse_catalog(self, soup):
-        for field in soup.find_all('article', {"class": "productBox_product"}):
-            yield field
-
-    def parse_entity(self, soup):
-        title = NotImplemented
-        price = NotImplemented
-        currency = NotImplemented
-        address = NotImplemented
-        img = NotImplemented
-        manufacturer = NotImplemented
-        o = Ofert(title, price, currency, address, img, manufacturer)
-        return o
-
-    def get_next(self, soup):
-        log.info('SOUP:\n%r', soup)
-        return None
-
-
 class WwwBielComPl():
     def __init__(self, response_object):
         self.response_object = response_object
@@ -1274,4 +1237,366 @@ class SklepkostarPl():
         if raw_pagination:
             link = raw_pagination.get('href')
             return link
+        return None
+
+
+class ObsessiveCom():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        for field in soup.find_all('li', {"class": "item"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+        raw = soup.find('a', {'class': 'product-image'})
+        if raw:
+            address = raw.get('href')
+            title = raw.get('title')
+        raw_img = soup.find('img', {'class': 'img-responsive'})
+        if raw_img:
+            img = raw_img.get('data-desktop')
+        raw_price = soup.find('span', {'class': 'price'})
+        if raw_price:
+            temp_price = raw_price.text.split('\xa0')
+            price = temp_price[0].replace(',', '.').strip()
+            currency = temp_price[1].strip()
+        manufacturer = 'obsessive'
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        raw_pagination = soup.find('a', {'class': 'next'})
+        if raw_pagination:
+            link = raw_pagination.get('href')
+            return link
+        return None
+
+
+class ModivoPl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        raw = soup.find('div', {'class': 'is-offerGrid'})
+        for field in raw.find_all('div', {"class": 'c-offerBox_inner'}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+
+        raw_price = soup.find('div', {'class': 'a-price'})
+        if raw_price:
+            price = raw_price.text.replace('zł', '').replace(',', '.').replace(' ', '').strip()
+            currency = 'zł'
+        raw_a_price = soup.find('div', {'class': 'is-promoPrice'})
+        if raw_a_price:
+            price = raw_a_price.text.replace('zł', '').replace(',', '.').replace(' ', '').strip()
+        raw = soup.find('div', {'class': 'c-offerBox_data'})
+        if raw:
+            raw_url = raw.find('a')
+            tmp_url = raw_url.get('href')
+            address = ''.join([self.response_object.protocol, '://', self.response_object.domain, tmp_url])
+            manufacturer = raw_url.text.strip()
+        raw_img = soup.find('div', {'class', 'c-offerBox_photo'})
+
+        if raw_img:
+            tmp_img = raw_img.find('img')
+            if tmp_img:
+                if tmp_img.has_attr('src'):
+                    t_img = tmp_img.get('src')
+                else:
+                    t_img = tmp_img.get('data-src').split('|')
+                    t_img = t_img[0]
+                img = ''.join([self.response_object.protocol, '://', self.response_object.domain, t_img])
+        raw_title = soup.find('div', {'class': ['a-typo', 'is-text']})
+        if raw_title:
+            title = raw_title.text.strip()
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        raw_pagination = soup.find('a', {'class': 'is-nextLink'})
+        if raw_pagination:
+            link = raw_pagination.get('href')
+            return link
+        return None
+
+
+class WwwELadyPl():
+
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        id_products = []
+        results = soup.find_all('div', {'data-type': 'product'})
+        if results:
+            for result in results:
+                product_id = result.get('data-product-id')
+                id_products.append(int(product_id))
+        str_list = []
+        for product_id in id_products:
+            str_list.append('{}{}'.format('data%5BProduct%5D%5Bid%5D%5B%5D=', product_id))
+        post_data = '&'.join(str_list)
+        header = {
+            'Accept': '*/*',
+            'User-Hash': 'aa0d1789178c78840d9f2ede5593517a0b45392b',
+            'X-Requested-With': 'XMLHttpRequest',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.121 Safari/537.36', # noqa E501
+            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+            'Origin': ',https://www.e-lady.pl',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Dest': 'empty',
+            'Referer': self.response_object.url,
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Accept-Language': 'pl-PL,pl;q=0.9,en-US;q=0.8,en;q=0.7',
+        }
+        url = 'https://www.e-lady.pl/ceny'
+        s = Session()
+        req = Request('POST', url, data=post_data, headers=header)
+        prepped = s.prepare_request(req)
+        resp = s.send(prepped)
+        self.ceny = resp.json()
+
+        for field in soup.find_all('div', {"class": "product-box"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+
+        raw_url = soup.find('a', {'data-type': 'product-url'})
+        if raw_url:
+            title = raw_url.get('title')
+            result = raw_url.get('href')
+            address = ''.join([self.response_object.protocol, '://', self.response_object.domain, result])
+        raw_img = soup.find('img')
+        if raw_img:
+            img = raw_img.get('src')
+        product_id = soup.get('data-product-id')
+        price = self.ceny[product_id]['price'].replace('zł', '').replace(',', '.').strip()
+        currency = 'zł'
+        manufacturer = self.ceny[product_id].get('producer', None)
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        next_page_raw = soup.findAll(attrs={"class": "next"})
+        if next_page_raw:
+            result = next_page_raw[0].get('href')
+            if result:
+                return ''.join([self.response_object.protocol, '://', self.response_object.domain, result])
+
+
+class WwwEsotiqCom():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        results = soup.find('script', text=re.compile(".*categorypageConfig.*"))
+        a = results.contents[0]
+        b = a.replace('var categorypageConfig =', '')
+        c = b.strip()
+        i = json.loads(c[:-1])
+        for p in i.get('products'):
+            result = {
+                'price': p.get('discount_price') if p.get('discount_price') else p.get('price'),
+                'address': p.get('url'),
+                'img':  p.get('image').get('src'),
+                'title': p.get('image').get('alt'),
+                'manufacturer': 'esotiq',
+            }
+            yield result
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+        temp = soup.get('price').split(' ')
+        title = soup.get('title')
+        price = temp[0]
+        currency = temp[1].lower()
+        address = ''.join([self.response_object.protocol, '://', self.response_object.domain, '/', soup.get('address')])
+        img = ''.join([self.response_object.protocol, '://', self.response_object.domain, '/', soup.get('img')])
+        manufacturer = soup.get('manufacturer')
+
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        if self.response_object.url[-2:] == '=1':
+            path = self.response_object.url
+        else:
+            path = ''.join([self.response_object.url, '?strona=1'])
+        path = path[:-1]
+        inc = 1
+        url = ''.join([path, str(inc)])
+        soup = get_soup_from_url(url)
+        results = soup.find('script', text=re.compile(".*categorypageConfig.*"))
+        if not results:
+            return None
+        a = results.contents[0]
+        b = a.replace('var categorypageConfig =', '')
+        c = b.strip()
+        i = json.loads(c[:-1])
+        if len(i.get('products')):
+            inc = inc + 1
+            url = ''.join([path, str(inc)])
+            return url
+        return None
+
+
+class Www2HmCom():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        for field in soup.find_all('div', {"class": "item-details"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+
+        log.info('RAW:\n%r\n_____________\n', soup)
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        log.info('SOUP:\n%r', soup)
+        return None
+
+
+class EroprezentPl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        for field in soup.find_all('li', {"class": "product"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+        raw_title = soup.find('h2', {'class': 'woocommerce-loop-product__title'})
+        if raw_title:
+            title = raw_title.text.strip()
+        raw_url = soup.find('a', {'class': 'woocommerce-LoopProduct-link'})
+        if raw_url:
+            address = raw_url.get('href')
+        raw_img = soup.find('img', {'loading': 'lazy'})
+        if raw_img:
+            img = raw_img.get('data-src')
+
+        raw_prices = soup.find_all('span', {'class': 'woocommerce-Price-amount'})
+        if raw_prices:
+            for raw_price in raw_prices:
+                tmp_price = raw_price.text.split('\xa0')
+                price = tmp_price[0].strip().replace(',', '.')
+                currency = tmp_price[1].strip()
+        manufacturer = None
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        raw_pagination = soup.find('a', {'class': 'next'})
+        if raw_pagination:
+            link = raw_pagination.get('href')
+            return link
+        return None
+
+
+class NbieliznaPl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        for field in soup.find_all('article', {"class": "productBox_product"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+
+        log.info('RAW:\n%r\n_____________\n', soup)
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        log.info('SOUP:\n%r', soup)
+        return None
+
+
+class WwwVenusNetPl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        for field in soup.find_all('li', {"class": "ajax_block_product"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+        raw_prices = soup.find('span', {'class': 'price'})
+        if raw_prices:
+            tmp_price = raw_prices.text.strip().split(' ')
+            price = tmp_price[0].strip().replace(',', '.')
+            currency = tmp_price[1].strip()
+
+        raw_url = soup.find('a', {'class': 'product_img_link is_stlazyloading'})
+        if raw_url:
+            address = raw_url.get('href')
+
+        raw_img = soup.find('img', {'class': 'img-responsive'})
+        if raw_img:
+            img = raw_img.get('data-src')
+            title = raw_img.get('title')
+        manufacturer = None
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        raw = soup.find('li', {'class': 'pagination_next'})
+        if raw:
+            raw_pagination = raw.find('a')
+            if raw_pagination:
+                path = ''.join([self.response_object.protocol, '://', self.response_object.domain, raw_pagination.get('href')]) # noqa E501
+                return path
         return None
