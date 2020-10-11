@@ -1600,3 +1600,28 @@ class WwwVenusNetPl():
                 path = ''.join([self.response_object.protocol, '://', self.response_object.domain, raw_pagination.get('href')]) # noqa E501
                 return path
         return None
+
+
+class GomezPl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        for field in soup.find_all('article', {"class": "productBox_product"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+
+        log.info('RAW:\n%r\n_____________\n', soup)
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        log.info('SOUP:\n%r', soup)
+        return None
