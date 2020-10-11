@@ -1557,3 +1557,46 @@ class NbieliznaPl():
     def get_next(self, soup):
         log.info('SOUP:\n%r', soup)
         return None
+
+
+class WwwVenusNetPl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        for field in soup.find_all('li', {"class": "ajax_block_product"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+        raw_prices = soup.find('span', {'class': 'price'})
+        if raw_prices:
+            tmp_price = raw_prices.text.strip().split(' ')
+            price = tmp_price[0].strip().replace(',', '.')
+            currency = tmp_price[1].strip()
+
+        raw_url = soup.find('a', {'class': 'product_img_link is_stlazyloading'})
+        if raw_url:
+            address = raw_url.get('href')
+
+        raw_img = soup.find('img', {'class': 'img-responsive'})
+        if raw_img:
+            img = raw_img.get('data-src')
+            title = raw_img.get('title')
+        manufacturer = None
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        raw = soup.find('li', {'class': 'pagination_next'})
+        if raw:
+            raw_pagination = raw.find('a')
+            if raw_pagination:
+                path = ''.join([self.response_object.protocol, '://', self.response_object.domain, raw_pagination.get('href')]) # noqa E501
+                return path
+        return None
