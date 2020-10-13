@@ -1625,3 +1625,74 @@ class GomezPl():
     def get_next(self, soup):
         log.info('SOUP:\n%r', soup)
         return None
+
+
+class WwwSisiPl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        for field in soup.find_all('div', {"class": "productsCont"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+
+        raw_img = soup.find('img', {'class': 'big'})
+        if raw_img:
+            title = raw_img.get('alt')
+            img = ''.join(
+                [
+                    self.response_object.protocol,
+                    '://',
+                    self.response_object.domain,
+                    '/',
+                    raw_img.get('src')
+                ]
+            )
+            tmp_manufacturer = title.split('-')
+            manufacturer = tmp_manufacturer[0].strip()
+        raw_url = soup.find('a', {'class': 'productPhoto'})
+        if raw_url:
+            address = ''.join(
+                [
+                    self.response_object.protocol,
+                    '://',
+                    self.response_object.domain,
+                    '/',
+                    raw_url.get('href')
+                ]
+            )
+        raw_price = soup.find('span', {'class': 'price'})
+        if raw_price:
+            tmp_price = raw_price.text.split(' ')
+            price = tmp_price[0].strip()
+            tmp_currency = tmp_price[1].strip().replace(',', '')
+            currency = tmp_currency
+        raw_new_price = soup.find('span', {'class': 'price_red'})
+        if raw_new_price:
+            tmp_price = raw_new_price.text.split(' ')
+            price = tmp_price[0].strip()
+            tmp_currency = tmp_price[1].strip()
+            currency = tmp_currency
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        raw_pagination = soup.find('a', {'class': 'next'})
+        if raw_pagination:
+            return ''.join(
+                [
+                    self.response_object.protocol,
+                    '://',
+                    self.response_object.domain,
+                    '/',
+                    raw_pagination.get('href')
+                ]
+            )
+        return None
