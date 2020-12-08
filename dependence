@@ -9,7 +9,7 @@ cffi==1.13.2
 chardet==3.0.4
 Click==7.0
 colorthief==0.2.1
-dataclasses==0.7
+# dataclasses==0.7
 decorator==4.4.1
 flake8==3.8.3
 Flask==1.1.1

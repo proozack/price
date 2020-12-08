@@ -92,18 +92,6 @@ class GaleryParser(AbstractParser):
         else:
             for field in catalogs_parser_wrapper(parsers_type, self._soup):
                 self._run_parse_entity(result, field)
-            """
-            wyn = self.m.parse_entity(field)
-            log.info('%r', wyn)
-            if wyn:
-                if wyn.title != NotImplemented and wyn.price != NotImplemented and wyn.url != NotImplemented and wyn.image != NotImplemented and wyn.manufacturer != NotImplemented and wyn.currency != NotImplemented: # noqa E501
-                    result.append(wyn)
-                else:
-                    log.warning('Jedno z pól jest nie zaimplementowane')
-
-            else:
-                log.warning('Pole jest puste, %r', field)
-            """
         return result
 
     def _run_parse_entity(self, result, field):

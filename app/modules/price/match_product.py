@@ -1,6 +1,7 @@
 from app.utils.local_type import Ofert, TempProduct
-from app.modules.price.db_utils import OfertDbUtils, CategoryDbUtils, ProductDbUtils
+from app.modules.price.db_utils import OfertDbUtils, CategoryDbUtils, ProductDbUtils, ProductVersionDbUtils, BrandDbUtils
 from app.modules.price.tools import BrandTools, CategoryTools, TagTools, SizeTools
+from app.utils.string_utils import StringUtils
 from slugify import slugify
 import pprint
 
@@ -16,12 +17,6 @@ class MatchProduct():
         self.tt = TagTools()
         self.skip_characters = ['!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '_', '-', '+', '+', '|', '\\', '{', '[', ']', '}', ':', ';', '"', '\'', '<', ',', '>', '.', '?', '/', '`', '~'] # noqa E501
 
-    def parase_all_ofert(self, ofert_id=None, shop_id=None) -> Ofert:
-        odbu = OfertDbUtils()
-        # log.info('To jest oferta %r', ofert_id)
-        for ofert in odbu.get_all_oferts(ofert_id, shop_id):
-            yield ofert
-
     def parse_offert(self, ofert):
         tp = TempProduct(**self.sa_obj_to_dict(ofert))
         pp = pprint.PrettyPrinter(indent=4)
@@ -36,8 +31,8 @@ class MatchProduct():
         #
 
         # log.info(pp.pprint(tp.get_dict()))
-        log.info('Manufacturer: %r', tp.manufacturer)
-        log.info('Tp object %r', tp.get_dict())
+        # log.info('Manufacturer: %r', tp.manufacturer)
+        # log.info('Tp object %r', tp.get_dict())
         # log.info('%r', tp)
         # log.info('%r', new_title)
         # if exist url in ProductShopUrl
@@ -52,17 +47,22 @@ class MatchProduct():
         # parse in title product name
         # registy new product
         # remove product from ofert
-        self._save_product(tp)
-        log.info('____________________________________________')
+        #
+        # log.info('____________________________________________')
+        return tp
 
     def _parse_title(self, tp):
         tp = self._remove_bad_chars_in_title(tp)
         tp = self._search_size_from_title(tp)
-        if not tp.manufacturer:
-            tp = self._serch_manufacturer_in_title(tp)
+        tp = self._serch_manufacturer_in_title(tp)
         tp = self._serch_category_in_title(tp)
         tp = self._search_tags_in_title(tp)
-        self._remove_space(tp)
+        tp = self._remove_space(tp)
+        tp = self._search_product(tp)
+        tp = self._search_product_version(tp)
+        if not tp.brand_id:
+            bdbu = BrandDbUtils() 
+            tp.brand_id = bdbu.get_brand_by_product_name(tp.title)
         return tp
 
     def parse_image(self, image):
@@ -82,18 +82,47 @@ class MatchProduct():
                 log.info('Tags: Change title from {} to {}'.format(tp_object.title, title[0]))
                 tp_object.title = title[0]
                 tp_object.add_field('tag', title[1])
+        if not hasattr(tp_object, 'tag'):
+            tp_object.add_field('tag', [])
         return tp_object
 
     def _serch_manufacturer_in_title(self, tp_object: TempProduct) -> TempProduct:
-        manufacturer = self.pt.search_brand(tp_object.title)
-        title = self.pt.remove_brand_from_title(tp_object.title, manufacturer)
-        if tp_object.title != title[0]:
-            log.info('Manufacturer: Change title from {} to {}'.format(tp_object.title, title[0]))
-            tp_object.title = title[0]
+        su = StringUtils()
         if not tp_object.manufacturer:
-            log.info('Set new manufacturer {}'.format(manufacturer))
-            tp_object.manufacturer = manufacturer
-            return tp_object
+            # obsłużyc przypadek gdy produkt nie ma producenta w tyule ani w nei był na stronie katalogowej
+            # można spórbowac w url'u produktu
+            manufacturer = self.pt.search_brand(tp_object.title)
+            log.info('Response manu %r ', manufacturer)
+            if manufacturer:
+                title = self.pt.remove_brand_from_title(tp_object.title, manufacturer)
+                if tp_object.title != title[0]:
+                    log.info('Manufacturer: Change title from {} to {}'.format(tp_object.title, title[0]))
+                    tp_object.title = title[0]
+            else:
+                log.info('Manufacturer: search brand in url %r', tp_object.url)
+                manufacturer = self.pt.search_brand(' '.join(su.multisplit_string(tp_object.url, lower=False)))
+                log.info('Response %r', manufacturer)
+
+            #można dodać poszukiwanie też po url zdjęcia oraz finalnie po nazwie produktu
+            if len(manufacturer):
+                log.info('Set new manufacturer {}'.format(manufacturer))
+                tp_object.manufacturer = manufacturer[1]
+                tp_object.add_field('brand_id', manufacturer[0])
+            else:
+                tp_object.add_field('brand_id', None)
+
+        else:
+            manufacturer = self.pt.search_brand(tp_object.title)
+            title = self.pt.remove_brand_from_title(tp_object.title, manufacturer)
+            if tp_object.title != title[0]:
+                log.info('Manufacturer: Change title from {} to {}'.format(tp_object.title, title[0]))
+                tp_object.title = title[0]
+
+            bdbu = BrandDbUtils() 
+            tp_object.add_field('brand_id', bdbu.get_brand_id_by_name(tp_object.manufacturer.lower()))
+
+
+
         return tp_object
 
     def _serch_category_in_title(Self, tp_object: TempProduct) -> TempProduct:
@@ -146,23 +175,40 @@ class MatchProduct():
         if new_title != tp_object.title:
             log.info('RemoveSpace: Change title from {} to {}'.format(tp_object.title, new_title))
             tp_object.title = new_title
+        return tp_object
 
-    def _save_product(self, tp_object):
-        pp = pprint.PrettyPrinter(indent=4)
-        # log.info('Save object %r', tp_object.get_dict())
-        log.info(' ### Zapisuję ###')
-        if tp_object.manufacturer:
-            tp_object.add_field('slug', slugify(' '.join([tp_object.manufacturer, tp_object.title])))
-            log.info('Save object:\n%r', pp.pprint(tp_object.get_dict()))
+    def _search_product(self, tp_object: TempProduct) -> TempProduct:
+        ppdu = ProductDbUtils()
+        product_id = ppdu.if_product_exists(
+            tp_object.title,
+            tp_object.brand_id,
+            tp_object.category_id
+        )
+        tp_object.add_field('product_id', product_id)
+        return tp_object
+
+    def _search_product_version(self, tp_object: TempProduct) -> TempProduct:
+        log.info('%r', tp_object.get_dict())
+        pvdbu = ProductVersionDbUtils()
+        tags_count = len(tp_object.tag)
+        tag_id_list = [
+            id
+            for id, name in tp_object.tag
+        ]
+        result = pvdbu.search_product_by_tags(tp_object.product_id, tag_id_list)
+        if result is None:
+            product_version_id = pvdbu.search_version_by_products_name(
+                tp_object.title,
+                tp_object.brand_id,
+                tp_object.category_id,
+                tp_object.url
+            )
+            tp_object.add_field('product_version_id', product_version_id)
+            log.info('SV: searcg by name %r', tp_object.title)
+        elif result.count == tags_count:
+            tp_object.add_field('product_version_id', result.id)
+            log.info('SV: searcg by tag list')
         else:
-            czy_zapisac = False
-            log.info('Manufacturer is empty Skipping registration product {}'.format(tp_object.title))
-
-        czy_zapisac = False
-        try:
-            if czy_zapisac:
-                self.pdbu.add_product(tp_object)
-            else:
-                log.info('Skipping registration product {}'.format(tp_object.title))
-        except Exception:
-            log.warning('Error', exc_info=True)
+            tp_object.add_field('product_version_id', none)
+            log.info('SV: add empty version_id field')
+        return tp_object

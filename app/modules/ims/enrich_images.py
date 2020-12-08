@@ -1,5 +1,6 @@
 from app.modules.price.models import Image, Ofert
 from app.utils.image_utils import WebImageUtils
+from sqlalchemy import and_
 from app import db
 
 import logging
@@ -31,8 +32,12 @@ class EnrichImage():
     def add_image(self, url_iamge):
         self.set_url_image(url_iamge)
         if not self.is_url_in_db():
-            self.process_image()
-            return True
+            try:
+                self.process_image()
+                return True
+            except:
+                log.info('Image %r is wrong: ', url_iamge)
+                return False
         return False
 
 
@@ -48,8 +53,11 @@ class EnrichImages(EnrichImage):
                 Image,
                 Ofert.image == Image.image
             ).filter(
-                Image.id == None # noqa E711
+                and_(
+                    Image.id == None, # noqa E711
+                    Ofert.image.isnot(None)
+                )
             )
         for lp, o in enumerate(oferts):
-            print('{} -> {} '.format(lp, o.image))
+            log.info('{} -> {} '.format(lp, o.image))
             self.add_image(o.image)

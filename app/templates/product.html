@@ -1,4 +1,4 @@
-{% extends "base_product.html" %}
+{% extends "base.html" %}
 {% block title %}{{ resource['description'] }}{% endblock %}
 {% block head %}
     {{ super() }}
@@ -6,26 +6,61 @@
         .important { color: #336699; }
     </style>
 {% endblock %}
-{% block content %}
 
-<div class="container">
-    <h1>{{ resource['description'] }}</h1>
-    {% for result in entities -%} 
-    <div style="border: 1px solid black;">
-        <img class="img-fluid img-thumbnail" style="float: left; height: 200px;" src="{{ result.image }}"/>
-        <div style="height:201px;">
-            <a href="{{ result.url }}" target="_blank">
-                <h3>{{ result.title }}</h3>
-            </a>
-            <span>Shop url: <strong>{{ result.domain }}</strong></span>
-                <div>Manufacturer: {{ result.manufacturer or '' }}</div>
-                <div>Max Price: {{ result.max_price }} {{ result.currency }}</div>
-                <div>Min Price: {{ result.min_price }} {{ result.currency }}</div>
-                <div>AVG Price: {{ result.avg_price }} {{ result.currency }}</div>
-                <div>Visit count: {{ result.count_visit }}</div>
-                <div>Recent visits data: {{ result.recent_visits_data.strftime('%Y-%m-%d') }}</div>
-        </div>
-    </div>
+{% block menu %}
+    {% for entity in menu -%}
+    <li><a href="{{ resource['real_url'] }}category/{{ entity.representation }}/1">{{ entity.name }}</a></li>
     {% endfor %}
-</div>
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+    {% if entities|list|length %}
+        <h1>{{ resource['description'] }}</h1>
+        {% for result in entities -%} 
+        <div class="row">
+            <div class="col">
+                <a href="{{ result.url }}" target="_blank">
+                    <strong>{{ result.title }}</strong>
+                </a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col" style="padding: 0px;">
+                <img class="img-thumbnail" src="{{ result.image }}" style="width: 150px;"/>
+            </div>
+            <div class="col">
+                    <span class="badge badge-warning">
+                        <b>Price:</b> {{ result.max_price }} {{ result.currency }}
+                    </span>
+                <ul style="padding: 0; list-style-type: none;">
+                    <li><b>Shop url:</b> {{ result.domain }}</li>
+                    <li><b>Product ID:</b> {{ result.product_id or '' }}</li>
+                    <li><b>Ofert ID:</b> {{ result.ofert_id or '' }}</li>
+                    <li><b>Brand:</b> {{ result.manufacturer or '' }}</li>
+                    <li><b>Hash:</b> {{ result.hash or '' }}</li>
+                    <li><b>Last visits:</b> {{ result.recent_visits_data.strftime('%Y-%m-%d') }}</li>
+                    <li><b>Tags:</b>
+                        {% for tag in result.tags|sort() %}
+                            <span class="badge badge-primary">
+                                {{ tag }}
+                            </span>
+                        {% endfor %}
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <hr />
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <h1>No result found</h1>
+    {% endif %}
+    </div>
+</section>
+
 {% endblock %}

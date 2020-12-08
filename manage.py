@@ -88,6 +88,23 @@ def parse_ofert(ofert_id=None, shop_id=None):
 
 
 @manager.command
+def tags_ofert(ofert_id=None, shop_id=None, entry_point_id=None):
+    """
+    Run parasing all ofert storage in price_ofert
+    """
+    if ofert_id:
+        log.info('Run parasing ofert: Ofert_id:{}'.format(ofert_id))
+    elif shop_id:
+        log.info('Run parasing ofert: Shop_id:{}'.format(shop_id))
+    elif entry_point_id:
+        log.info('Run parasing ofert: Entry_Point_id:{}'.format(entry_point_id))
+    else:
+        log.info('Run parasing all oferts')
+    s = PriceServices()
+    s.tags_ofert(ofert_id, shop_id, entry_point_id)
+
+
+@manager.command
 def list_entry_point():
     """
     Show all entry points
@@ -98,6 +115,15 @@ def list_entry_point():
 
 
 @manager.command
+def list_category():
+    """
+    Show all category
+    """
+    log.info('All category:')
+    s = PriceServices()
+    s.get_list_category()
+
+@manager.command
 def enrich_image():
     """
     Run enriching images process
@@ -106,6 +132,46 @@ def enrich_image():
     with app.app_context():
         e = EnrichImages()
         e.parase_all_images()
+
+
+@manager.command
+def add_synonym_to_category(category_id, word):
+    """
+    Add synonym to category 
+    """
+    log.info('Try add  word %r to category %r', word, category_id)
+    s = PriceServices()
+    s.add_synonym_to_category(category_id, word)
+
+
+@manager.command
+def add_tag_to_list(name, product_id):
+    """
+    Add tag to product 
+    """
+    log.info('Try add tag %r to product %r', name, product_id)
+    s = PriceServices()
+    s.add_tag_to_list(name, product_id)
+
+
+@manager.command
+def add_loose_tag(name):
+    """
+    Add tag to list 
+    """
+    log.info('Try add tag %r', name)
+    s = PriceServices()
+    s.add_loose_tag(name)
+
+
+@manager.command
+def add_brand(brand_name, logo=None):
+    """
+    Add tag to list 
+    """
+    log.info('Try add new brand %r', brand_name)
+    s = PriceServices()
+    s.add_brand(brand_name, logo)
 
 
 @manager.command
