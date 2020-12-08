@@ -50,10 +50,12 @@ class UrlUtils():
     def get_dicts_from_args(self, url):
         url_string = self.get_attr_from_url(url)
         new_dict = {}
-        for var in url_string.split('&'):
-            cos = var.split('=')
-            new_dict[cos[0]] = cos[1]
-        return new_dict
+        if url_string:
+            for var in url_string.split('&'):
+                cos = var.split('=')
+                new_dict[cos[0]] = cos[1]
+            return new_dict
+        return None
 
     def check_if_domain_exists(self, url):
         hostname = self.get_domain(url)

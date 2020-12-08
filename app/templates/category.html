@@ -1,17 +1,35 @@
-{% extends "base_category.html" %}
-{% block title %}{{ resource['description'] }}{% endblock %}
-{% block head %}
-    {{ super() }}
-    <style type="text/css">
-        .important { color: #336699; }
-    </style>
+{% extends "base.html" %}
+
+{% block title %}
+    {{ resource['description'] }}
 {% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ resource['static_url'] }}css/templatemo-style.css">
+    <link rel="stylesheet" href="{{ resource['static_url'] }}css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ resource['static_url'] }}css/template_category.css">
+<!--
+-->
+    {{ super() }}
+{% endblock %}
+
+{% block menu %}
+    {% for entity in menu -%}
+    <li><a href="{{ resource['real_url'] }}category/{{ entity.representation }}/1">{{ entity.name }}</a></li>
+    {% endfor %}
+{% endblock %}
+
 {% block content %}
+<section class="section">
 
-<div class="container">
+    <div> 
+        <h1 style="font-family: Playfair Display;"> {{ resource['description'] }} </h1>
+        <p>
+            <b>Found {{entities|list|length}} from  {{ resource['count'] }} records</b>
+        </p>
 
-    <h1>{{ resource['description'] }}</h1>
         {% if entities|list|length %}
+        <div class="d-flex flex-row-reverse">
             <ul class="pagination">
                 {% if resource['page'] - 1 > 0 %}
                   <li class="page-item"><a class="page-link" href="{{ resource['page'] - 1 }}">Previous</a></li>
@@ -50,12 +68,10 @@
                   <li class="page-item"><a class="page-link" href="{{ resource['page'] + 1 }}">Next</a></li>
                 {% endif %}
             </ul>
+        </div>
+    </div>
 
-
-            <div class="alert alert-primary" role="alert">
-                <h2>Found {{entities|list|length}} from  {{ resource['count'] }} records</h2>
-            </div>
-
+    <div class="container">
             <div class="row">
                 {% for entity in entities -%}
                 {% if (loop.index-1) %4== 0 %}
@@ -66,13 +82,24 @@
                 <div class="col-md-3 col-sm-6">
                     <div class="product-grid">
                         <div class="product-image">
-                            <a href="{{ entity.hash }}" />
-                                <img src="{{ entity.image }}" style="height: 400px;" />
+                            <a href="{{ resource['real_url'] }}product/{{ entity.product_id  }}" />
+                                    <img src="{{ entity.image }}" style="height: 400px;" />
                             </a>
+                        </div>
+                        <div class="product-discount-label">
+                            {{entity.count}}
+                        </div>
+                        <div class="social" style="background-color: #FFFFFF; border: 1px solid red;">
+                            Product ID: {{ entity.product_id }}
                         </div>
                         <div class="product-content">
                             <h3 class="title"><a href="#">{{ entity.title }}</a></h3>
-                            <div class="price">{{entity.price}} {{entity.currency}}
+                            <div class="price">
+                            {% if entity.min_price == entity.max_price %}
+                                {{entity.min_price}} {{entity.currency}} 
+                            {% else %}
+                                {{entity.min_price}} {{entity.currency}} - {{entity.max_price}} {{entity.currency}} 
+                            {% endif %}
                             </div>
                         </div>
                     </div>
@@ -80,8 +107,10 @@
                 </div>
                 {% endfor %}
             </div>
-            <div class="d-flex flex-row-reverse bg-secondary">
-                <ul class="pagination p-2 bg-info">
+        </div>
+
+        <div class="d-flex flex-row-reverse">
+                <ul class="pagination">
                     {% if resource['page'] - 1 > 0 %}
                       <li class="page-item"><a class="page-link" href="{{ resource['page'] - 1 }}">Previous</a></li>
                     {% endif %}
@@ -121,7 +150,8 @@
                 </ul>
             </div>
         {% else %}
-            <h2>No result found</h2>
+            <h1>No result found</h1>
         {% endif %}
-</div>
+    </div>
+</section>
 {% endblock %}

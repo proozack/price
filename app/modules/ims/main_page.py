@@ -1,22 +1,25 @@
+import datetime
+import time
 import uuid
 from itsdangerous import JSONWebSignatureSerializer as Serializer
 from flask_restful import Resource
 from flask import current_app, g
 from flask import session, request
 from flask_restful import abort, reqparse
+from flask import render_template, make_response
 from flask_login import (current_user)
+from sqlalchemy import desc, func
 from app import db
 from app.utils.pass_util import hash_password, verify_password
 from app.utils.resource import PrivateResource
-from flask import render_template,  make_response
-import datetime
-import time
 from app.modules.ims.models import User, AuthLog
 from app.utils.local_type import MenuLink
 from app.utils.url_utils import UrlUtils
-from sqlalchemy import desc, func
 from app.modules.price.models import Shop, MetaCategory, Category, EntryPoint
 from app.modules.price.models import Ofert, Image
+from conf.localconfig import Config
+from app.modules.price import db_utils
+from app.modules.price.db_utils import ProductDbUtils
 # from sqlalchemy.sql.expression import func
 
 import logging
@@ -43,21 +46,131 @@ menu = {
 }
 
 
-class HelloWorld(Resource):
+class Imports(Resource):
+    def get(Resource):
+        now = datetime.datetime.now()
+        ct = db_utils.CategoryDbUtils()
+        template = render_template(
+            'imports.html',
+            resource = {
+                'title': 'Imports - reale value',
+                'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
+                'real_url': Config.REAL_URL,
+                'static_url': Config.STATIC_URL,
+                'description': 'List procesing oferts from catalog',
+                'year': now.year,
+                'dt_table': [
+                    'ID',
+                    'Title',
+                    'ID entry point',
+                    'Name',
+                    'Manufacturer',
+                    'Cretaion date',
+                ]
+            },
+            menu = ct.get_category_for_menu()
+        )
+        resp = make_response(template)
+        resp.mimetype = 'text/html'
+        return resp
+
+
+class DtImports(Resource):
+    def get(self):
+        odu = db_utils.OfertDbUtils()
+        data = odu.get_all_ofert_by_entry_point(28)
+        # ile = data.count
+        # log.info(dir(data))
+        ile = 1
+        log.info('To jest data %r', data)
+        return {
+            "draw": 1,
+            "recordsTotal": ile,
+            "recordsFiltered": 57,
+            "data": data        
+        }
+
+
+class Tags(Resource):
     def get(self):
         now = datetime.datetime.now()
-        # session['redis_test'] = 'This is a session variable.'
-        # return {'hello': 'world'}
+        ct = db_utils.CategoryDbUtils()
+        config = {
+            'title': 'Tags by counting',
+            'dt_header': [
+                'Tag Id',
+                'Tag name',
+                'Count'
+            ],
+            'date': ct.get_category_for_menu() 
+        }
+
+
+        template = render_template(
+            'dt.html',
+            resource = {
+                'title': 'Tags by counting',
+                'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
+                'real_url': Config.REAL_URL,
+                'static_url': Config.STATIC_URL,
+                'description': 'Tags by counting',
+                'year': now.year,
+                'dt_table': [
+                    'ID',
+                    'Title',
+                    'ID entry point',
+                    'Name',
+                    'Manufacturer',
+                    'Cretaion date',
+                ]
+            },
+            menu = ct.get_category_for_menu()
+        )
+        resp = make_response(template)
+        resp.mimetype = 'text/html'
+        return resp
+
+class HelloWorld(Resource):
+    def get(self):
+        ct = db_utils.CategoryDbUtils()
+        now = datetime.datetime.now()
+        result = db.session.query(func.max(Ofert.creation_date)).first()
+        o = db.session.query(
+            Ofert.title,
+            Ofert.image,
+            Ofert.price,
+            Ofert.currency,
+            Image.control_sum,
+        ).join(Image, Image.image == Ofert.image).filter(
+            Ofert.creation_date >= result[0].date()
+        ).order_by(
+            Ofert.price.desc()
+        )
+        count = o.count()
+        wyn = o.paginate(1, 24)
+        entit = [
+            {
+                'title': getattr(i, 'title'),
+                'image':  i.image,
+                'price': i.price,
+                'currency': i.currency,
+                'hash': i.control_sum,
+            }
+            for i in wyn.items
+        ]
+
         template = render_template(
             'index.html',
             resource={
                 'title': 'Price - reale value',
-                'icon_path': 'http://2py.eu/img/brand/wtmlogo.png',
+                'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
+                'real_url': Config.REAL_URL,
+                'static_url': Config.STATIC_URL,
                 'description': 'Friendly prices search engine',
-                'real_url': 'http://2py.eu:9999/api_v1/',
-                'static_url': 'http://2py.eu:9080/',
                 'year': now.year
             },
+            entities=entit,
+            menu = ct.get_category_for_menu()
         )
         resp = make_response(template)
         resp.mimetype = 'text/html'
@@ -98,62 +211,62 @@ class EntyPoints(Resource):
 
 class CategoryView(Resource):
     def get(self, category, page=1):
+        pdu = ProductDbUtils()
+        ct = db_utils.CategoryDbUtils()
+        category_id = ct.get_category_id_by_slug(category)
+
         count = 0
-        if category == 'bodysuits':
-            result = db.session.query(func.max(Ofert.creation_date)).first()
-            # o = Ofert.query.filter(Ofert.creation_date >= result[0].date()).join(Image, Image.image == Ofert.image)\
-            log.info('Szukam dla daty {}'.format(result))
-            if result[0]:
-                o = db.session.query(
-                    Ofert.title,
-                    Ofert.image,
-                    Ofert.price,
-                    Ofert.currency,
-                    Image.control_sum,
-                ).join(Image, Image.image == Ofert.image).filter(
-                    Ofert.creation_date >= result[0].date()
-                ).order_by(
-                    Ofert.price.desc()
-                )
-                count = o.count()
-                wyn = o.paginate(page, 32)
-            else:
-                count = 0
-                wyn = {}
-            log.info('To jest wyn : %r', wyn)
-            if wyn:
-                entit = [
-                    {
-                        'title': getattr(i, 'title'),
-                        'image':  i.image,
-                        'price': i.price,
-                        'currency': i.currency,
-                        'hash': i.control_sum,
-                    }
-                    for i in wyn.items
-                ]
-            else:
-                entit = []
-            entities = entit
-            """
-            entities = []
-            for i in entit:
-                i['hash'] = b.encodebytes(str.encode(i.get('url'))).decode("utf-8")
-                entities.append(i)
-                log.info('\n\nTo jest i: %r', i)
-            """
+        """
+        result = db.session.query(func.max(Ofert.creation_date)).first()
+        if result[0]:
+            o = db.session.query(
+                Ofert.title,
+                Ofert.image,
+                Ofert.price,
+                Ofert.currency,
+                Image.control_sum,
+            ).join(Image, Image.image == Ofert.image).filter(
+                Ofert.creation_date >= result[0].date()
+            ).order_by(
+                Ofert.price.desc()
+            )
+            count = o.count()
+            wyn = o.paginate(page, 32)
         else:
-            result = []
-            entities = []
+            count = 0
+            wyn = {}
+        """
+        o = pdu.get_product_for_catgeory_view(category_id)
+        count = o.count()
+        wyn = o.paginate(page, 32)
+        result = datetime.datetime.now()
+        if wyn:
+            entit = [
+                {
+                    'product_id': i.product_id,
+                    'title': getattr(i, 'title'),
+                    'image':  i.image,
+                    'count': i.count,
+                    'min_price': i.min_price,
+                    'max_price': i.max_price,
+                    'currency': 'zł',
+                    'hash': '',
+                }
+                for i in wyn.items
+            ]
+        else:
+            entit = []
+
+        entities = entit
 
         template = render_template(
             'category.html',
             resource={
                 'title': '2py.eu',
-                'icon_path': 'http://2py.eu/img/brand/wtmlogo.png',
                 'description': 'Selected category: {}'.format(category),
-                'real_url': 'http://2py.eu:9999/api_v1/',
-                'static_url': 'http://2py.eu:9080/',
+                'icon_path': ''.join([Config.STATIC_URL, 'logo.png']),
+                'real_url': Config.REAL_URL,
+                'static_url': Config.STATIC_URL,
                 'scan_date': result,
                 'menu': menu,
                 'category': category,
@@ -161,17 +274,19 @@ class CategoryView(Resource):
                 'count': count,
                 'max_page': int(count/32) if count % 32 == 0 else int(count/32) + 1
             },
-            entities=entities
+            entities=entities,
+            menu = ct.get_category_for_menu()
         )
         resp = make_response(template)
         resp.mimetype = 'text/html'
         # log.info('To jest wynik %r', menu)
-        log.info('to są entities: %r', entities)
+        # log.info('to są entities: %r', entities)
         return resp
 
 
 class ShopsStats(Resource):
     def get(self):
+        ct = db_utils.CategoryDbUtils() 
         result = None
         entities = []
         _sql = """
@@ -190,6 +305,7 @@ class ShopsStats(Resource):
         )
         SELECT
                 pep.id as ep_id,
+                pep.url as entry_point,
                 ps.url,
                 COALESCE(s3.ile, 0) AS i3,
                 COALESCE(s2.ile, 0) AS i2,
@@ -225,14 +341,15 @@ class ShopsStats(Resource):
             'shops.html',
             resource={
                 'title': '2py.eu',
-                'icon_path': 'http://2py.eu/img/brand/wtmlogo.png',
                 'description': 'Shops list',
-                'real_url': 'http://2py.eu:9999/api_v1/',
-                'static_url': 'http://2py.eu:9080/',
+                'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
+                'real_url': Config.REAL_URL,
+                'static_url': Config.STATIC_URL,
                 'menu': menu,
                 'fields': fields,
                 'fields_name': [
                     'Entry point ID',
+                    'URL',
                     'Shop url',
                     'T - 3 days',
                     'T - 2 days',
@@ -241,7 +358,8 @@ class ShopsStats(Resource):
                     'Dynamic',
                 ]
             },
-            entities=entities
+            entities=entities,
+            menu = ct.get_category_for_menu()
         )
         resp = make_response(template)
         resp.mimetype = 'text/html'
@@ -250,89 +368,55 @@ class ShopsStats(Resource):
 
 
 class ProductView(Resource):
-    def get(self, category, product):
+    # def get(self, category, product):
+    def get(self, product):
+        ct = db_utils.CategoryDbUtils()
         count = 0
         page = 1
         result = None
         entities = []
-        # import base64 as b
-        # from app.modules.ims.models import Ofert
-        # wyn = b.decodebytes(str.encode(product)).decode("utf-8")
-        # from app.modules.ims.models import Ofert, Image
         wyn = product
-        """
-        # result = db.session.query(func.max(Ofert.creation_date)).first()
-        o = Ofert.query.filter(Ofert.url == wyn).order_by(Ofert.creation_date.desc()).all()
-        entities = [
-            i.get_dict()
-            for i in o
-        ]
-        """
         u = UrlUtils()
-        # result = db.session.query(func.max(Ofert.creation_date)).first()
-        # o = Ofert.query.filter(Ofert.creation_date >= result[1].date()).join(Image, Image.image == Ofert.image)
-        o = db.session.query(
-            Ofert.title,
-            Ofert.url,
-            Ofert.image,
-            func.count(Ofert.id).label('count_visit'),
-            func.max(Ofert.price).label('max_price'),
-            func.avg(Ofert.price).label('avg_price'),
-            func.min(Ofert.price).label('min_price'),
-            func.max(Ofert.creation_date).label('recent_visits_data'),
-            Ofert.currency,
-            Image.control_sum,
-            Ofert.manufacturer
-        ).join(
-            Image,
-            Image.image == Ofert.image
-        ).filter(
-            Image.control_sum == wyn
-        ).order_by(
-            desc(Ofert.title)
-        ).group_by(
-            Ofert.title,
-            Ofert.url,
-            Ofert.image,
-            Ofert.currency,
-            Image.control_sum,
-            Ofert.manufacturer
-        ).all()
+        pdu = ProductDbUtils()
+        o = pdu.get_product_by_product_def_id(wyn)
+        now = datetime.datetime.now()
         entities = [
             {
+                'product_id': i.product_id,
+                'ofert_id': i.ofert_id,
                 'title': i.title,
                 'url': i.url,
                 'domain': u.get_domain(i.url),
                 'image':  i.image,
-                'max_price': i.max_price,
-                'avg_price': i.avg_price,
-                'min_price': i.min_price,
-                'count_visit': i.count_visit,
-                'recent_visits_data': i.recent_visits_data,
+                'max_price': i.price, # i.max_price,
+                'avg_price': None, # i.avg_price,
+                'min_price': None, # i.min_price,
+                'count_visit': None, # i.count_visit,
+                'recent_visits_data': now, # i.recent_visits_data,
                 'currency': i.currency,
                 'hash': i.control_sum,
-                'manufacturer': i.manufacturer
+                'manufacturer': i.brand_name.capitalize(), # i.manufacturer
+                'tags': i.tags.split(';'),
             }
             for i in o
         ]
-        log.info('Ro jest wyn %r', entities)
-
         template = render_template(
             'product.html',
             resource={
                 'title': '2py.eu',
-                'icon_path': 'http://2py.eu/img/brand/wtmlogo.png',
-                'description': 'Selected product: {}'.format(category),
-                'real_url': 'http://2py.eu:9999/api_v1/',
-                'static_url': 'http://2py.eu:9080/',
+                'description': 'Selected product: {}'.format('Dupa'),
+                'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
+                'real_url': Config.REAL_URL,
+                'static_url': Config.STATIC_URL,
                 'scan_date': result,
                 'menu': menu,
-                'category': category,
+                'category': 'Dupa',
                 'page': page,
                 'count': count,
                 'max_page': int(count/32) if count % 32 == 0 else int(count/32) + 1
             },
-            entities=entities
+            entities=entities,
+            menu = ct.get_category_for_menu()
         )
         resp = make_response(template)
         resp.mimetype = 'text/html'

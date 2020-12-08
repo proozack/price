@@ -1,4 +1,5 @@
-{% extends "base_product.html" %}
+{% extends "base_imports.html" %}
+
 {% block title %}{{ resource['description'] }}{% endblock %}
 {% block head %}
     {{ super() }}
@@ -6,35 +7,59 @@
         .important { color: #336699; }
     </style>
 {% endblock %}
-{% block content %}
 
-<div class="container">
-    <h1>{{ resource['description'] }}</h1>
 
-    <table id="shops" class="display">
-        <thead>
-        <tr>
-        {% for field in resource.fields_name -%}
-            <th>{{ field }}</th>
-        {% endfor %}
-        </tr>
-        </thead>
-        <tbody>
-    {% for result in entities -%} 
-    <tr>
-        {% for field in resource['fields'] -%}
-        <td> {{ result.__getitem__(field) }} </td>
-        {% endfor %}
-    </tr>
+{% block menu %}
+    {% for entity in menu -%}
+        <li><a href="category/{{ entity.representation }}/1">{{ entity.name }}</a></li>
     {% endfor %}
-    </tbody>
-    </table>
-</div>
-<script>
-$(document).ready( function () {
-    $('#shops').DataTable({
-          "pageLength": 50
-    });
-} );
-</script>
+{% endblock %}
+
+
+{% block search %}
+<section class="section">
+    <div class="container">
+      <div class="s-12 m-12 l-12">
+          <form name="contactForm" class="customform" method="post">
+              <input name="subject" class="subject" placeholder="Search products ..." title="Subject" type="text" />
+          </form>
+      </div>
+    </div>
+</section>	
+{% endblock %}
+
+
+{% block content %}
+    <section class="section">
+        <div class="container">
+            <h1>{{ resource['description'] }}</h1>
+
+            <table id="shops" class="display">
+                <thead>
+                <tr>
+                {% for field in resource.fields_name -%}
+                    <th>{{ field }}</th>
+                {% endfor %}
+                </tr>
+                </thead>
+                <tbody>
+            {% for result in entities -%} 
+            <tr>
+                {% for field in resource['fields'] -%}
+                <td> {{ result.__getitem__(field) }} </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+            </tbody>
+            </table>
+        </div>
+    </section>
+
+    <script>
+        $(document).ready( function () {
+            $('#shops').DataTable({
+                  "pageLength": 50
+            });
+        } );
+    </script>
 {% endblock %}

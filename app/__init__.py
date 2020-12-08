@@ -22,7 +22,8 @@ from conf.localconfig import Config
 
 db = SQLAlchemy()
 login_manager = LoginManager()
-api = Api(prefix='/api_v1', catch_all_404s=True, errors=restful_error_messages.errors)
+# api = Api(prefix='/api_v1', catch_all_404s=True, errors=restful_error_messages.errors)
+api = Api(catch_all_404s=True, errors=restful_error_messages.errors)
 
 def create_app():
     """Construct the core application."""

@@ -1284,9 +1284,17 @@ class ModivoPl():
         self.response_object = response_object
 
     def parse_catalog(self, soup):
+        """
         raw = soup.find('div', {'class': 'is-offerGrid'})
-        for field in raw.find_all('div', {"class": 'c-offerBox_inner'}):
-            yield field
+        if raw:
+            for field in raw.find_all('div', {"class": 'c-offerBox_inner'}):
+                yield field
+        """
+        raw = soup.find_all('li', {'class': 'product'})
+        
+        if raw:
+            for field in raw:
+                yield field
 
     def parse_entity(self, soup):
         title = NotImplemented
@@ -1295,42 +1303,44 @@ class ModivoPl():
         address = NotImplemented
         img = NotImplemented
         manufacturer = NotImplemented
-
-        raw_price = soup.find('div', {'class': 'a-price'})
+        
+        raw_price = soup.find_all('div', {'class': 'price'})
         if raw_price:
-            price = raw_price.text.replace('zł', '').replace(',', '.').replace(' ', '').strip()
-            currency = 'zł'
-        raw_a_price = soup.find('div', {'class': 'is-promoPrice'})
-        if raw_a_price:
-            price = raw_a_price.text.replace('zł', '').replace(',', '.').replace(' ', '').strip()
-        raw = soup.find('div', {'class': 'c-offerBox_data'})
-        if raw:
-            raw_url = raw.find('a')
-            tmp_url = raw_url.get('href')
-            address = ''.join([self.response_object.protocol, '://', self.response_object.domain, tmp_url])
-            manufacturer = raw_url.text.strip()
-        raw_img = soup.find('div', {'class', 'c-offerBox_photo'})
-
+            count = len(raw_price)
+            temp_price = raw_price[count-1]
+            tmp_price = temp_price.text.strip().replace(' ', '').split('\xa0')
+            price = tmp_price[0].replace(',', '.').strip()
+            currency = tmp_price[1].strip()
+        raw_url = soup.find('a', {'class': 'text-link'})
+        if raw_url:
+            url = raw_url.get('href')
+            address = ''.join([self.response_object.protocol, '://', self.response_object.domain, url])
+            title = raw_url.get('title')
+        raw_img = soup.find('img', {'class': '_imgr'})
         if raw_img:
-            tmp_img = raw_img.find('img')
-            if tmp_img:
-                if tmp_img.has_attr('src'):
-                    t_img = tmp_img.get('src')
-                else:
-                    t_img = tmp_img.get('data-src').split('|')
-                    t_img = t_img[0]
-                img = ''.join([self.response_object.protocol, '://', self.response_object.domain, t_img])
-        raw_title = soup.find('div', {'class': ['a-typo', 'is-text']})
-        if raw_title:
-            title = raw_title.text.strip()
+            img = raw_img.get('src')
+        manufacturer = None
         o = Ofert(title, price, currency, address, img, manufacturer)
         return o
 
     def get_next(self, soup):
-        raw_pagination = soup.find('a', {'class': 'is-nextLink'})
-        if raw_pagination:
-            link = raw_pagination.get('href')
-            return link
+        result = soup.find('span', {'class': 'total-pages'})
+        tab = result.text.split(' ')
+        tab = tab[1]
+        uu = UrlUtils()
+        atr = uu.get_dicts_from_args(self.response_object.url)
+        if atr and atr.get('p'):
+            page_num = atr.get('p')
+            page_next = int(page_num) + 1
+            new_url = self.response_object.url.replace(str(page_num), str(page_next))
+        else:
+            page_next = '?p=2'
+            new_url = ''.join([self.response_object.url, '/', page_next])
+        log.info('Test if next page exist %r', new_url)
+        soup = get_soup_from_url(new_url)
+        results = soup.find('li', {'class': 'product'})
+        if results:
+            return new_url
         return None
 
 
@@ -1670,6 +1680,9 @@ class WwwSisiPl():
             )
         raw_price = soup.find('span', {'class': 'price'})
         if raw_price:
+            t_raw_price = soup.find('span', {'class': 'price_pink'})
+            if t_raw_price:
+                raw_price = t_raw_price
             tmp_price = raw_price.text.split(' ')
             price = tmp_price[0].strip()
             tmp_currency = tmp_price[1].strip().replace(',', '')
@@ -1695,4 +1708,32 @@ class WwwSisiPl():
                     raw_pagination.get('href')
                 ]
             )
+        return None
+
+
+class WwwReneePl():
+    def __init__(self, response_object):
+        self.response_object = response_object
+
+    def parse_catalog(self, soup):
+        for field in soup.find_all('article', {"class": "productBox_product"}):
+            yield field
+
+    def parse_entity(self, soup):
+        title = NotImplemented
+        price = NotImplemented
+        currency = NotImplemented
+        address = NotImplemented
+        img = NotImplemented
+        manufacturer = NotImplemented
+
+        log.info('RAW:\n%r\n_____________\n', soup)
+        o = Ofert(title, price, currency, address, img, manufacturer)
+        return o
+
+    def get_next(self, soup):
+        ####
+        ## https://www.renee.pl/akcesoria-damskie?page=3
+        ####
+        log.info('SOUP:\n%r', soup)
         return None

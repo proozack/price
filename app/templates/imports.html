@@ -1,0 +1,62 @@
+{% extends "base_imports.html" %}
+
+{% block title %}
+    {{ resource['description'] }}
+{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ resource['static_url'] }}css/templatemo-style.css">
+    <link rel="stylesheet" href="{{ resource['static_url'] }}css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ resource['static_url'] }}css/template_category.css">
+<!--
+-->
+    {{ super() }}
+{% endblock %}
+
+{% block menu %}
+    {% for entity in menu -%}
+    <li><a href="{{ resource['real_url'] }}category/{{ entity.representation }}/1">{{ entity.name }}</a></li>
+    {% endfor %}
+{% endblock %}
+
+{% block content %}
+<section class="section">
+<h1 style="font-family: Playfair Display;">{{ resource['description'] }}</h1>
+
+<table id="example" class="display" style="width:100%">
+        <thead>
+            <tr>
+                {% for field in resource.dt_table -%}
+                    <th>{{ field }}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tfoot>
+            <tr>
+                {% for field in resource.dt_table -%}
+                    <th>{{ field }}</th>
+                {% endfor %}
+            </tr>
+        </tfoot>
+    </table>
+</section>
+<script>
+
+$(document).ready(function() {
+    $('#example').DataTable( {
+        "processing": true,
+        "serverSide": true,
+        "ajax": "dt_imports",
+        "columns": [
+            { "data": "id" },
+            { "data": "title" },
+            { "data": "entry_point_id" },
+            { "data": "name" },
+            { "data": "manufacturer" },
+            { "data": "creation_date" },
+        ],
+        "order": [[1, 'asc']]
+    });
+});
+</script>
+{% endblock %}
