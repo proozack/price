@@ -1,0 +1,43 @@
+
+{% macro pages(resource) -%}
+        <div class="d-flex flex-row-reverse">
+            <ul class="pagination">
+                {% if resource['page'] - 1 > 0 %}
+                  <li class="page-item"><a class="page-link" href="{{ resource['page'] - 1 }}">Previous</a></li>
+                {% endif %}
+
+                {% if resource['page'] != 1 %}
+                  <li class="page-item"><a class="page-link" href="1">1</a></li>
+                {% endif %}
+
+
+                {% if resource['page'] - 2 > 1 %}
+                <li class="page-item"><a class="page-link" href="{{ resource['page'] - 1 }}">{{ resource['page'] - 2 }}</a></li>
+                {% endif %}
+
+                {% if resource['page'] - 1 > 1 %}
+                <li class="page-item"><a class="page-link" href="{{ resource['page'] - 1 }}">{{  resource['page'] - 1 }}</a></li>
+                {% endif %}
+
+
+                <li class="page-item"><span class="page-link" style="background-color: #D3D3D3">{{ resource['page'] }} </span></li>
+
+                {% if resource['page'] + 1 < resource['max_page'] %}
+                  <li class="page-item"><a class="page-link" href="{{ resource['page'] + 1 }}">{{ resource['page'] + 1 }}</a></li>
+                {% endif %}
+
+                {% if resource['page'] + 2 < resource['max_page'] %}
+                  <li class="page-item"><a class="page-link" href="{{ resource['page'] + 2 }}">{{ resource['page'] + 2 }}</a></li>
+                {% endif %}
+                
+
+                {% if resource['page']  != resource['max_page'] %}
+                  <li class="page-item"><a class="page-link" href="{{ resource['max_page'] }}">{{ resource['max_page'] }}</a></li>
+                {% endif %}
+
+                {% if resource['page'] + 1 < resource['max_page'] %}
+                  <li class="page-item"><a class="page-link" href="{{ resource['page'] + 1 }}">Next</a></li>
+                {% endif %}
+            </ul>
+        </div>
+{%- endmacro %}

@@ -43,9 +43,11 @@
                     <li><b>Last visits:</b> {{ result.recent_visits_data.strftime('%Y-%m-%d') }}</li>
                     <li><b>Tags:</b>
                         {% for tag in result.tags|sort() %}
-                            <span class="badge badge-primary">
-                                {{ tag }}
-                            </span>
+                            <a href="{{ resource['real_url'] }}tag/{{ tag }}">
+                                <span class="badge badge-primary">
+                                    {{ tag }}
+                                </span>
+                            </a>
                         {% endfor %}
                     </li>
                 </ul>

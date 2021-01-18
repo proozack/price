@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+{% extends "base_imports.html" %}
 
 {% block title %}
     {{ resource['description'] }}
@@ -29,6 +29,7 @@
                 {% for field in resource.dt_table -%}
                     <th>{{ field }}</th>
                 {% endfor %}
+                <th>+</th>
             </tr>
         </thead>
         <tfoot>
@@ -36,23 +37,29 @@
                 {% for field in resource.dt_table -%}
                     <th>{{ field }}</th>
                 {% endfor %}
-            </tr>
-        </tfoot>
-    </table>
+                <th>+</th>
+        </tr>
+    </tfoot>
+</table>
 </section>
+
 <script>
 $(document).ready(function() {
-    $('#example').DataTable( {
-        "processing": true,
-        "serverSide": true,
-        "ajax": "dt_imports",
-        "columns": [
-            { "data": "id" },
-            { "data": "title" },
-            { "data": "entry_point_id" },
-            { "data": "name" },
-            { "data": "manufacturer" },
-            { "data": "creation_date" },
+$('#example').DataTable( {
+    "processing": true,
+    "serverSide": true,
+    "ajax": "{{ resource.dt_config.ajax }}",
+    "columns": [
+        { "data": "id" },
+        { "data": "value" },
+        { "data": "meaning" },
+        { "data": "count"},
+        {
+            "class":          "details-control",
+            "orderable":      false,
+            "data":           null,
+            "defaultContent": "<button>Click Me</button>"
+        }
         ],
         "order": [[1, 'asc']]
     });

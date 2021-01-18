@@ -20,6 +20,7 @@ from app.modules.price.models import Ofert, Image
 from conf.localconfig import Config
 from app.modules.price import db_utils
 from app.modules.price.db_utils import ProductDbUtils
+from app.utils.resource import datatable_sqla
 # from sqlalchemy.sql.expression import func
 
 import logging
@@ -79,10 +80,7 @@ class DtImports(Resource):
     def get(self):
         odu = db_utils.OfertDbUtils()
         data = odu.get_all_ofert_by_entry_point(28)
-        # ile = data.count
-        # log.info(dir(data))
         ile = 1
-        log.info('To jest data %r', data)
         return {
             "draw": 1,
             "recordsTotal": ile,
@@ -90,11 +88,86 @@ class DtImports(Resource):
             "data": data        
         }
 
+class Tag(Resource):
+    def get(self, tag):
+        ct = db_utils.CategoryDbUtils()
+        count = 0
+        page = 1
+        result = None
+        entities = []
+        wyn = tag
+        u = UrlUtils()
+        pdu = db_utils.TagDbUtils()
+        o = pdu.get_product_by_tag(tag)
+        now = datetime.datetime.now()
+        entities = [
+            {
+                'product_id': i.product_id,
+                'ofert_id': i.ofert_id,
+                'title': i.title,
+                'url': i.url,
+                'domain': u.get_domain(i.url),
+                'image':  i.image,
+                'max_price': i.price, # i.max_price,
+                'avg_price': None, # i.avg_price,
+                'min_price': None, # i.min_price,
+                'count_visit': None, # i.count_visit,
+                'recent_visits_data': now, # i.recent_visits_data,
+                'currency': i.currency,
+                'hash': i.control_sum,
+                'manufacturer': i.brand_name.capitalize(), # i.manufacturer
+                'tags': i.all_tags.split(';'),
+                'main_tags':  i.tags.split(';'),
+                'category':  i.category,
+            }
+            for i in o
+        ]
+        means_list = [
+            { 'label': mens.meaning }
+            for mens in pdu.get_list_meaning() 
+        ]
+        log.info('Resultset %r', means_list)
+        template = render_template(
+            'tag.html',
+            resource={
+                'title': '2py.eu',
+                'description': 'Selected tag: {}'.format(tag),
+                'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
+                'real_url': Config.REAL_URL,
+                'static_url': Config.STATIC_URL,
+                'scan_date': result,
+                'menu': menu,
+                'category': tag,
+                'page': page,
+                'count': count,
+                'max_page': int(count/32) if count % 32 == 0 else int(count/32) + 1,
+                'meaning': means_list,
+                'tag': tag,
+            },
+            entities=entities,
+            menu = ct.get_category_for_menu()
+        )
+        resp = make_response(template)
+        resp.mimetype = 'text/html'
+        log.info('To jest wynik %r', menu)
+        return resp
+
+    def post(self, tag):
+        log.info('Nadaje znaczenie tagowi %r znaczenie %r', tag, request.values);
+        data = request.values
+        meaning = data.get('data')
+        log.info('Nadaje znaczenie %r', meaning);
+        w = db_utils.TagDbUtils()
+        w.set_meaning(tag, meaning)
+        return True
+
 
 class Tags(Resource):
+
     def get(self):
         now = datetime.datetime.now()
         ct = db_utils.CategoryDbUtils()
+
         config = {
             'title': 'Tags by counting',
             'dt_header': [
@@ -116,19 +189,34 @@ class Tags(Resource):
                 'description': 'Tags by counting',
                 'year': now.year,
                 'dt_table': [
-                    'ID',
-                    'Title',
-                    'ID entry point',
-                    'Name',
-                    'Manufacturer',
-                    'Cretaion date',
-                ]
+                    'Tag Id',
+                    'Tag name',
+                    'Meaning',
+                    'Count',
+                ],
+                'dt_config': {
+                    'ajax': 'dt_tags',
+                }
             },
             menu = ct.get_category_for_menu()
         )
         resp = make_response(template)
         resp.mimetype = 'text/html'
         return resp
+
+
+class DtTags(Resource):
+
+    @datatable_sqla('tags_list')
+    def get(self):
+        # log.info('Reqparse: %r', request.args)
+
+        tdu = db_utils.TagDbUtils()
+        ile = 1
+        return {
+            "data": tdu.get_tag_by_counting() 
+        }
+
 
 class HelloWorld(Resource):
     def get(self):
