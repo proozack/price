@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}{{ resource['description'] }}{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .important { color: #336699; }
+    </style>
+
+    <script>
+        function set_meaning(tag_name, meaning) {
+            url =  tag_name;
+            var posting = $.post( url,
+                { data: meaning}
+            ).done(function() {
+                alert( "second success" );
+            }).fail(function(response) {
+                alert( "error: " + JSON.stringify(response) );
+            });
+        }
+    </script>
+{% endblock %}
+
+{% block menu %}
+    {% for entity in menu -%}
+    <li><a href="{{ resource['real_url'] }}category/{{ entity.representation }}/1">{{ entity.name }}</a></li>
+    {% endfor %}
+{% endblock %}
+
+{% block content %}
+<section class="section">
+
+    <div class="position-absolute w-100 d-flex flex-column p-4">
+        <div class="toast ml-auto border border-primary" role="alert" data-delay="500" data-autohide="true">
+            <div class="toast-header">
+                <strong class="mr-auto text-primary">Toast</strong>
+                <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                    <span aria-hidden="true">×</span>
+                </button>
+            </div>
+            <div class="toast-body"> Hey, there! This is a Bootstrap 4 toast. </div>
+        </div>
+    </div>
+
+
+    <div class="container">
+    {% if entities|list|length %}
+        <h1>{{ resource['description'] }}</h1>
+
+
+        <nav class="navbar navbar-expand-lg navbar-light bg-light">
+          <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Set meaning
+                </a>
+                <div class="dropdown-menu" aria-labelledby="set_meaning">
+                    {% for mean in resource.meaning %}
+                    <span class="dropdown-item" onClick="set_meaning('{{ resource.tag }}', '{{  mean.label }}')" style="cursor: pointer;">{{ mean.label }}</span>
+                    {% endfor %}
+                </div>
+              </li>
+              <li class="nav-item">
+                  <button class="btn btn-outline-danger my-2 my-sm-0" type="submit">Disable</button>
+              </li>
+            </ul>
+            <form class="form-inline my-2 my-lg-0">
+              <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+              <button class="btn btn-outline-primary my-2 my-sm-0" type="submit">Search</button>
+            </form>
+          </div>
+        </nav>
+
+
+        {% for result in entities -%} 
+        <div class="row">
+            <div class="col">
+                <a href="{{ result.url }}" target="_blank">
+                    <strong>{{ result.title }}</strong>
+                </a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col" style="padding: 0px;">
+                <img class="img-thumbnail" src="{{ result.image }}" style="width: 150px;"/>
+            </div>
+            <div class="col">
+                    <span class="badge badge-warning">
+                        <b>Price:</b> {{ result.max_price }} {{ result.currency }}
+                    </span>
+                <ul style="padding: 0; list-style-type: none;">
+                    <li><b>Shop url:</b> {{ result.domain }}</li>
+                    <li><b>Category:</b> <span class="badge bg-secondary">{{ result.category or '' }}</span></li>
+                    <li><b>Product ID:</b> {{ result.product_id or '' }}</li>
+                    <li><b>Ofert ID:</b> {{ result.ofert_id or '' }}</li>
+                    <li><b>Brand:</b> {{ result.manufacturer or '' }}</li>
+                    <li><b>Hash:</b> {{ result.hash or '' }}</li>
+                    <li><b>Last visits:</b> {{ result.recent_visits_data.strftime('%Y-%m-%d') }}</li>
+                    <li><b>Main tags:</b>
+                        {% for tag in result.main_tags|sort() %}
+                            <a href="{{ resource['real_url'] }}tag/{{ tag }}">
+                                <span class="badge badge-primary">
+                                    {{ tag }}
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </li>
+                    <li><b>All tags:</b>
+                        {% for tag in result.tags|sort() %}
+                            <a href="{{ resource['real_url'] }}tag/{{ tag }}">
+                                <span class="badge badge-success">
+                                    {{ tag }}
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col">
+                <hr />
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <h1>No result found</h1>
+    {% endif %}
+    </div>
+</section>
+{% endblock %}

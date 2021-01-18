@@ -181,6 +181,8 @@ def datatable_sqla(non_dt_field, dflt_schema=None, marshal_data=True):
     @decorator
     def wrapper(func, *args, **kwargs):
         dt_request = request.args.get('dtSSRequest', '').strip().lower() in ('true', 'tak', 't', 'y', 'yes', '1')
+        
+        log.info('Reqparse: %r', request.args)
 
         g.dt_params = {
             'dt_request': dt_request,
@@ -190,7 +192,9 @@ def datatable_sqla(non_dt_field, dflt_schema=None, marshal_data=True):
             'start': None,
             'length': None,
         }
+        log.info('\n\n\n\n DT params %r', dt_request)
         if dt_request:
+            log.info('Tutaj \n\n\n\n')
             src_dt_params = variable_decode(request.args)
             g.dt_params.update({
                 'search': src_dt_params['search'].strip(),
@@ -206,9 +210,11 @@ def datatable_sqla(non_dt_field, dflt_schema=None, marshal_data=True):
                     return dict(message=u'Nieprawidłowe parametry wywołania', errors=result.errors), 400
                 g.dt_params['dflt'] = result.data
 
+
         src_data = func(*args, **kwargs)
         if callable(src_data):
             src_data = src_data()
+        """
         if marshal_data:
             if 'marshal_model' in src_data:
                 fields = src_data['marshal_model']
@@ -222,10 +228,15 @@ def datatable_sqla(non_dt_field, dflt_schema=None, marshal_data=True):
             ret_data = marshal(src_data['data'], fields)
         else:
             ret_data = src_data['data']
+        """
+        ret_data = src_data['data']
+
+        """
         if not dt_request:
             return {
                 non_dt_field: ret_data,
             }
+        """
         return {
             'draw': request.args.get('draw'),
             'recordsTotal': src_data.get('recordsTotal', len(ret_data)),

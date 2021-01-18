@@ -804,6 +804,125 @@ class TagDbUtils():
         b = db.session.query(Tag.id, a.c.tag, Tag.meaning  ).join(Tag, a.c.tag == Tag.value, isouter = True).cte('b')
         return db.session.query(b.c.id.label('tag_id'), b.c.tag, b.c.meaning).all()
 
+    def get_tag_by_counting(self):
+        return db.session.query(
+            Tag.id,
+            Tag.value,
+            Tag.meaning,
+            func.count(TagProduct.tag_id).label('count'),
+        ).join(
+            TagProduct,
+            TagProduct.tag_id == Tag.id,
+            isouter = True
+        ).group_by(
+            Tag.id,
+            Tag.value,
+            Tag.meaning
+        ).order_by(
+            desc(
+                func.count(TagProduct.tag_id)
+            )
+        ).all()
+
+    def get_product_by_tag(self, tag):
+        products = db.session.query(
+            Tag.id,
+            TagProductDef.id.label('product_id'),
+            Ofert.id.label('ofert_id'),
+            Ofert.title,
+            Ofert.url,
+            Ofert.price,
+            Ofert.currency,
+            Image.image,
+            Image.control_sum,
+            func.coalesce(Ofert.manufacturer, '').label('brand_name'),
+            Category.name.label('category'),
+            Tag.value.label('tags')
+        ).join(
+            TagProduct,
+            TagProduct.tag_id == Tag.id
+        ).join(
+            TagProductDef,
+            TagProductDef.id == TagProduct.tag_product_def_id
+        ).join(
+            TagOfert,
+            TagOfert.tag_product_def_id == TagProduct.tag_product_def_id
+        ).join(
+            Ofert,
+            Ofert.id == TagOfert.ofert_id
+        ).join(
+            Image,
+            Image.image == Ofert.image
+        ).join(
+            Category,
+            Category.id == TagProductDef.category_id,
+            isouter = True
+        ).filter(
+            and_(
+                Tag.value == tag,
+                Ofert.creation_date.cast(Date) == func.current_date()
+            )
+        ).order_by(Ofert.price.asc()).cte('products')
+    
+        return db.session.query(
+            products.c.product_id,
+            products.c.ofert_id,
+            products.c.title,
+            products.c.url,
+            products.c.price,
+            products.c.currency,
+            products.c.image,
+            products.c.control_sum,
+            products.c.brand_name,
+            products.c.category,
+            products.c.tags,
+            func.string_agg(Tag.value, ';').label('all_tags')
+        ).join(
+            TagProduct,
+            TagProduct.tag_product_def_id == products.c.product_id,
+            isouter = True
+        ).join(
+            Tag,
+            Tag.id == TagProduct.tag_id,
+            isouter = True
+        ).group_by(
+            products.c.product_id,
+            products.c.ofert_id,
+            products.c.title,
+            products.c.url,
+            products.c.price,
+            products.c.currency,
+            products.c.image,
+            products.c.control_sum,
+            products.c.brand_name,
+            products.c.category,
+            products.c.tags,
+        ).order_by(
+            products.c.price.asc()
+        ).all()
+
+
+    def refresh_tags_by_synonym(self):
+        pass
+
+    def get_list_meaning(self):
+        return db.session.query(
+            func.coalesce(Tag.meaning, 'null').label('meaning')
+        ).group_by(
+            Tag.meaning
+        ).order_by(
+            Tag.meaning
+        ).all()
+
+    @commit_after_execution
+    def set_meaning(self, tag, meaning):
+        log.info('Wykonuje update %r %r', tag, meaning)
+        # k = db.session.query().filter(Tag.value == tag).first()
+        k = Tag.query.filter(Tag.value == str(tag)).first()
+        k.meaning = meaning
+        db.session.flush()
+
+
 class TagProductDbUtils():
 
     def get_tags_by_product(self, tag_product_def_id):
