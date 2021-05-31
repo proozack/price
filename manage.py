@@ -184,5 +184,17 @@ def enrich_images(enty_point_id=None):
     s.enrich_images()
 
 
+@manager.command
+def send_notification():
+    s = PriceServices()
+    s.send_notification()
+
+
+@manager.command
+def run_processing():
+    run_downloading()
+    tags_ofert()
+    send_notification()
+
 if __name__ == "__main__":
     manager.run()
