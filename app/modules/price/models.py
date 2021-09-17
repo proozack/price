@@ -369,6 +369,7 @@ class Tag(DbUtils):
     id = Column(Integer, Sequence(__seqname__), primary_key=True)
     value = Column(Text, nullable=False, comment='Key Word', unique=True)
     meaning = Column(Text, nullable=True, comment='Meaning word using to grouping')
+    word = Column(Text, nullable=True, comment='Orginal word')
 
     def __init__(self, value):
         self.value = value

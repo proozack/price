@@ -431,7 +431,8 @@ class ProductDbUtils():
             func.max(Ofert.price).label('max_price'),
             func.min(Ofert.price).label('min_price'),
             func.count(Ofert.id).label('count'),
-            func.max(Image.image).label('image')
+            func.max(Image.image).label('image'),
+            Brand.name.label('brand')
         ).join(
             TagOfert,
             TagOfert.tag_product_def_id == product.c.product_id
@@ -447,6 +448,9 @@ class ProductDbUtils():
                 TagProductDef.id == TagOfert.tag_product_def_id,
                 TagProductDef.category_id == category_id_
             )
+        ).join(
+            Brand,
+            Brand.id == TagProductDef.brand_id
         ).filter(
             and_ (
                 TagOfert.creation_date.cast(Date) == max_date, # func.current_date(),
@@ -454,7 +458,8 @@ class ProductDbUtils():
             )
         ).group_by(
             product.c.product_id,
-            product.c.title
+            product.c.title,
+            Brand.name
         ).order_by(
             desc(
                 func.count(Ofert.id)
@@ -512,6 +517,76 @@ class ProductDbUtils():
         ).order_by(
             asc(Ofert.price)
         ).all()
+
+    def get_product_title_by_id(self, product_def_id):
+        return db.session.query(
+            TagOfert.id,
+            Brand.name,
+            Brand.logo,
+            Tag.value
+        ).join(
+            TagProductDef,
+            TagProductDef.id == TagOfert.tag_product_def_id
+        ).join(
+            Brand,
+            Brand.id ==  TagProductDef.brand_id
+        ).join(
+            TagProduct,
+            TagProduct.tag_product_def_id == TagProductDef.id 
+        ).join(
+            Tag,
+            Tag.id == TagProduct.tag_id
+        ).filter(
+            TagProductDef.id == product_def_id
+        ).order_by(
+            desc(
+                TagProduct.id
+            )
+        ).first()
+
+    def get_unique_oferts(self, **kwargs):
+        """
+        :Keyword Arguments:
+        * *category_id* int --
+          ID Category
+        * *entry_point_id* int --
+          ID entry point
+        * *ofert_id* int --
+          Ofert ID
+        """
+        category_id = kwargs.get('category_id')
+        entry_point_id = kwargs.get('entry_point_id')
+        ofert_id = kwargs.get('ofert_id')
+
+        result =  db.session.query(
+            Ofert.url,
+            Ofert.title,
+            Ofert.manufacturer.label('main_brand'),
+            Category.name.label('main_category')
+        ).join(
+            EntryPoint,
+            EntryPoint.id == Ofert.entry_point_id
+        ).join(
+            Category,
+            Category.id == EntryPoint.category_id
+        ).group_by(
+             Category.name,
+             Ofert.manufacturer,
+             Ofert.url,
+             Ofert.title
+        )
+
+        if category_id:
+            result = result.filter(EntryPoint.category_id == category_id)
+
+        if entry_point_id:
+            result = result.filter(EntryPoint.id == entry_point_id)
+
+        if ofert_id:
+            result = result.filter(Ofert.id == ofert_id)
+
+        return result.all()
+
 
 class ProductStatementDbUtils():
     def add_statment(self, ofert_arch_id, brand_id, category_id, product_id, poduct_version_id, shop_id, product_image_id, product_shop_url_id, product_price_id):
@@ -838,6 +913,7 @@ class TagDbUtils():
             func.coalesce(Ofert.manufacturer, '').label('brand_name'),
             Category.name.label('category'),
             Tag.value.label('tags')
+
         ).join(
             TagProduct,
             TagProduct.tag_id == Tag.id
@@ -863,7 +939,10 @@ class TagDbUtils():
                 Ofert.creation_date.cast(Date) == func.current_date()
             )
         ).order_by(Ofert.price.asc()).cte('products')
-    
+        
+        subcategory = db.bindparam('str_tworzacy', '').label('subcategory')
+        colortags = db.bindparam('str_tworzacy', '').label('colortags')
+
         return db.session.query(
             products.c.product_id,
             products.c.ofert_id,
@@ -876,7 +955,9 @@ class TagDbUtils():
             products.c.brand_name,
             products.c.category,
             products.c.tags,
-            func.string_agg(Tag.value, ';').label('all_tags')
+            func.string_agg(Tag.value, ';').label('all_tags'),
+            subcategory,
+            colortags
         ).join(
             TagProduct,
             TagProduct.tag_product_def_id == products.c.product_id,
@@ -913,6 +994,13 @@ class TagDbUtils():
         ).order_by(
             Tag.meaning
         ).all()
+
+    def get_meaning_by_tag(self, tag):
+        return db.session.query(
+            Tag.meaning
+        ).filter(
+            Tag.value == tag
+        ).first()
 
     @commit_after_execution
     def set_meaning(self, tag, meaning):
@@ -1109,6 +1197,21 @@ class TagProductDbUtils():
             product_def_id,
             self.bulk_binding_product_tag(product_def_id, tuples_tag_list)
         )
+
+    def get_similarity_for_tag(self, tag):
+        # a = db.session.query(func.unnest(func.string_to_array(strings_tags, ';')).label('value')).cte('param')
+        result = db.session.query(
+            Tag.id,
+            Tag.value,
+            Tag.word,
+            Tag.meaning,
+            func.similarity(Tag.value, tag).label('similarity')
+        ).filter(
+            func.similarity(Tag.value, tag) > 0.6
+        ).order_by(
+            desc(func.similarity(Tag.value, tag).label('similarity'))
+        ).limit(2).all()
+        return result
 
     @commit_after_execution
     def c_add_tag_to_product(self, tags_list,  brand_id, category_id, product_def_id=None):

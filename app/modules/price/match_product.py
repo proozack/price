@@ -104,7 +104,7 @@ class MatchProduct():
                 log.info('Response %r', manufacturer)
 
             #można dodać poszukiwanie też po url zdjęcia oraz finalnie po nazwie produktu
-            if len(manufacturer):
+            if manufacturer is not None and len(manufacturer):
                 log.info('Set new manufacturer {}'.format(manufacturer))
                 tp_object.manufacturer = manufacturer[1]
                 tp_object.add_field('brand_id', manufacturer[0])
@@ -209,6 +209,6 @@ class MatchProduct():
             tp_object.add_field('product_version_id', result.id)
             log.info('SV: searcg by tag list')
         else:
-            tp_object.add_field('product_version_id', none)
+            tp_object.add_field('product_version_id', None)
             log.info('SV: add empty version_id field')
         return tp_object

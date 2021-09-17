@@ -119,6 +119,24 @@
                             </a>
                         {% endfor %}
                     </li>
+                    <li><b>Color tags:</b>
+                        {% for tag in result.colortags|sort() %}
+                            <a href="{{ resource['real_url'] }}tag/{{ tag }}">
+                                <span class="badge badge-success">
+                                    {{ tag }}
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </li>
+                    <li><b>Subcategory:</b>
+                        {% for tag in result.subcategory|sort() %}
+                            <a href="{{ resource['real_url'] }}tag/{{ tag }}">
+                                <span class="badge badge-success">
+                                    {{ tag }}
+                                </span>
+                            </a>
+                        {% endfor %}
+                    </li>
                 </ul>
             </div>
         </div>

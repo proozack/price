@@ -32,10 +32,6 @@ class ProductSupport():
 
         czy_zapisac = True
 
-        # if not tp_object.product_version_id:
-        #   log.warn('Product version is empty - Skipping registration product {}'.format(tp_object.title))
-        #   czy_zapisac = False
-
         try:
             if czy_zapisac:
                 # todo to poprawić bo używa trzech commitów

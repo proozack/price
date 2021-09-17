@@ -90,7 +90,7 @@ def parse_ofert(ofert_id=None, shop_id=None):
 @manager.command
 def tags_ofert(ofert_id=None, shop_id=None, entry_point_id=None):
     """
-    Run parasing all ofert storage in price_ofert
+    Run tags ofert
     """
     if ofert_id:
         log.info('Run parasing ofert: Ofert_id:{}'.format(ofert_id))
@@ -135,7 +135,7 @@ def enrich_image():
 
 
 @manager.command
-def add_synonym_to_category(category_id, word):
+def add_synonym_to_cat(category_id, word):
     """
     Add synonym to category 
     """

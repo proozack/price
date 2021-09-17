@@ -19,7 +19,7 @@ from app.modules.price.models import Shop, MetaCategory, Category, EntryPoint
 from app.modules.price.models import Ofert, Image
 from conf.localconfig import Config
 from app.modules.price import db_utils
-from app.modules.price.db_utils import ProductDbUtils
+from app.modules.price.db_utils import ProductDbUtils, TagDbUtils
 from app.utils.resource import datatable_sqla
 # from sqlalchemy.sql.expression import func
 
@@ -91,6 +91,7 @@ class DtImports(Resource):
 class Tag(Resource):
     def get(self, tag):
         ct = db_utils.CategoryDbUtils()
+        tdb = TagDbUtils()
         count = 0
         page = 1
         result = None
@@ -99,7 +100,9 @@ class Tag(Resource):
         u = UrlUtils()
         pdu = db_utils.TagDbUtils()
         o = pdu.get_product_by_tag(tag)
+        meaning = tdb.get_meaning_by_tag(tag)
         now = datetime.datetime.now()
+        meaning = meaning[0] if meaning[0] else 'Not set'
         entities = [
             {
                 'product_id': i.product_id,
@@ -119,6 +122,8 @@ class Tag(Resource):
                 'tags': i.all_tags.split(';'),
                 'main_tags':  i.tags.split(';'),
                 'category':  i.category,
+                'subcategory': i.subcategory,
+                'colortags': i.colortags,
             }
             for i in o
         ]
@@ -131,7 +136,7 @@ class Tag(Resource):
             'tag.html',
             resource={
                 'title': '2py.eu',
-                'description': 'Selected tag: {}'.format(tag),
+                'description': 'Selected tag: "{}", meaning: "{}"'.format(tag, meaning),
                 'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
                 'real_url': Config.REAL_URL,
                 'static_url': Config.STATIC_URL,
@@ -339,6 +344,7 @@ class CategoryView(Resource):
                     'max_price': i.max_price,
                     'currency': 'zł',
                     'hash': '',
+                    'brand': i.brand
                 }
                 for i in wyn.items
             ]
@@ -467,6 +473,7 @@ class ProductView(Resource):
         u = UrlUtils()
         pdu = ProductDbUtils()
         o = pdu.get_product_by_product_def_id(wyn)
+        tit = pdu.get_product_title_by_id(wyn)
         now = datetime.datetime.now()
         entities = [
             {
@@ -492,7 +499,8 @@ class ProductView(Resource):
             'product.html',
             resource={
                 'title': '2py.eu',
-                'description': 'Selected product: {}'.format('Dupa'),
+                'description': '{}'.format(' '.join([tit[1].capitalize(), tit[3].capitalize()])),
+                'brand_image': tit[2],
                 'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
                 'real_url': Config.REAL_URL,
                 'static_url': Config.STATIC_URL,

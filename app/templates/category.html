@@ -56,7 +56,7 @@
                             Product ID: {{ entity.product_id }}
                         </div>
                         <div class="product-content">
-                            <h3 class="title"><a href="#">{{ entity.title }}</a></h3>
+                            <h3 class="title"><a href="#"><b>{{ entity.brand }}</b> - <i>{{ entity.title }}</i></a></h3>
                             <div class="price">
                             {% if entity.min_price == entity.max_price %}
                                 {{entity.min_price}} {{entity.currency}} 
