@@ -7,9 +7,9 @@ import logging
 log = logging.getLogger(__name__)
 
 # from localconfig import CeleryApp as cfg
-from app import create_app
-app = create_app()
-app.app_context().push()
+# from app import create_app
+# app = create_app()
+# app.app_context().push()
 
 app = Celery('tasks', broker='redis://192.168.254.201:6379/0')
 app.conf.result_backend = 'redis://192.168.254.201:6379/1'
