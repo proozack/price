@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Float, Integer, Text, ForeignKey, String, Numeric, Date, Boolean
 from sqlalchemy import Sequence
+from sqlalchemy.dialects.postgresql import JSONB
 from app.utils.models import DbUtils
 from app import db
 
@@ -654,3 +655,12 @@ class Size(DbUtils):
     id = Column(Integer, Sequence(__seqname__), primary_key=True)
     name = Column(Text, nullable=False, comment='Key Word', unique=True)
     meaning = Column(Text, nullable=True, comment='Meaning word using to grouping')
+
+"""
+class VisitProduct(DbUtils):
+    __tablename__ = 'visit_product'
+    __seqname__ = '{}_id_seq'.format(__tablename__)
+
+    id = Column(Integer, Sequence(__seqname__), primary_key=True)
+    url = Column(Text, nullable=False)
+"""

@@ -1,6 +1,8 @@
 from app.modules.price.models import Image, Ofert
 from app.utils.image_utils import WebImageUtils
 from sqlalchemy import and_
+from sqlalchemy import cast, Date
+from sqlalchemy.sql.expression import func
 from app import db
 
 import logging
@@ -55,7 +57,8 @@ class EnrichImages(EnrichImage):
             ).filter(
                 and_(
                     Image.id == None, # noqa E711
-                    Ofert.image.isnot(None)
+                    Ofert.image.isnot(None),
+                    Ofert.creation_date.cast(Date) == func.current_date()
                 )
             )
         for lp, o in enumerate(oferts):

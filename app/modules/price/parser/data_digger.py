@@ -4,6 +4,7 @@ from requests import Request, Session
 import re
 import json
 from app.utils.bs_tools import get_soup_from_url
+from app.modules.imp_price.local_types import ProductPage
 
 import logging
 log = logging.getLogger(__name__)
@@ -335,6 +336,87 @@ class IntymnaPl():
                     result = link[0].get('href')
                     return ''.join([self.response_object.protocol, '://', self.response_object.domain, result])
 
+    def get_product_page(self, soup):
+        pp = ProductPage()
+
+        product_not_exist = soup.find('span', {'class': 'produnavail'})
+        if product_not_exist:
+            log.warning('Product not exist: %r ', product_not_exist.text)
+            pp.deleted = True
+            pp.active = False
+            return pp
+
+        product_deleted = soup.find('div', {'class': 'search-error-head'})
+        if product_deleted:
+            log.warning('Product has been deleted %r ', product_deleted.text.strip())
+            pp.deleted = True
+            pp.active = False
+            return pp
+
+        product_path = soup.find('ul', {'class': 'bcrumbs'})
+        if product_path:
+            pp.attributes={}
+            pp.attributes.update(
+                {
+                    'product_path': product_path.text.replace('\n', '/')
+                }
+            )
+
+        pp.title = soup.find('title').text
+        pp.description = soup.find('div', {'class': 'produkt-opis'}).text.replace('\n', '').replace('\r', '')
+        pp.brand = soup.find('span', {'class': 'text-uppercase'}).text
+
+        raw_category = soup.find('span', {'class': 'link_gksp_nazwa'})
+        if raw_category:
+            pp.category = raw_category.text
+
+        raw_color = soup.findAll('img', {'class': 'liniakolor_popup_thumb_img'})
+        pp.color = []
+        for tmp_color in raw_color:
+            pp.color.append(tmp_color.get('title'))
+        if len(pp.color) == 0: 
+            raw_color = soup.find('span', {'class', 'proddeflineinputdef'})
+            pp.color.append(raw_color.text)
+
+        raw_size = soup.find('select', {'class': 'input_size'})
+        lista = []
+        for tmp_size in raw_size.findAll('option'):
+            if tmp_size.text != 'wybierz rozmiar':
+                lista.append(tmp_size.text)
+        pp.size = lista
+
+        raw_composition = soup.find('div', {'class': 'produkt-material'})
+        if raw_composition:
+            raw_composition = raw_composition.text.replace('Materiał:', '').strip()
+            # log.info('raw_composition %r', raw_composition)
+            pp.composition = raw_composition
+            """
+            if '/' in raw_composition:
+                list_composition = raw_composition.split('/')
+            else:
+                list_composition = raw_composition.split(',')
+            log.info(list_composition)
+            pp.composition = {}
+            for ent in list_composition:
+                ent = ent.strip()
+                if ' ' in ent:
+                    k, v = ent.split(' ')
+                    pp.composition.update({v: k})
+                else: 
+                    pp.composition.update({'non': ent})
+            """
+        raw_img = soup.findAll('a', {'class', 'mview'})
+        img = []
+        for temp in raw_img:
+            img.append(
+                {
+                'big': temp.get('data-image'),
+                'thumbs': temp.find('img').get('src')
+                }
+            )
+        pp.images = img 
+        return pp
+
 
 class ByannPl():
     def __init__(self, response_object):
@@ -394,6 +476,8 @@ class KontriPl():
         img = NotImplemented
         manufacturer = NotImplemented
 
+
+        log.info('SOUP %r'. soup)
         raw_ent = soup.findAll(attrs={"class": "showProduct"})
         if raw_ent:
             result = raw_ent[0].get('href')
@@ -513,6 +597,24 @@ class MagicznabieliznaPl():
         address = NotImplemented
         img = NotImplemented
         manufacturer = NotImplemented
+
+        raw_price = soup.find('span', {'itemprop': 'price'})
+        price = raw_price.get('content')
+
+        temp_title = soup.find('h2', {'class': 'product-name'})
+        currency = soup.find('span', {'class': 'currency_pinfo'}).text.lower().strip()
+        raw_img = soup.find('img', {'class': 'rc_button'})
+        img = raw_img.get('src')
+        title = raw_img.get('alt').lower()
+        temp_man = soup.find('div', {'itemprop': 'manufacturer'})
+        raw_man = temp_man.find('img')
+        if raw_man is not None:
+            manufacturer = raw_man.get('alt').lower()
+        else:
+            manufacturer = None
+        raw_address = soup.find('a', {'itemprop': 'url'})
+        address = raw_address.get('href')
+        """
         raw_tab_url = soup.findAll('a')
         if raw_tab_url:
             address = raw_tab_url[0].get('href')
@@ -532,10 +634,12 @@ class MagicznabieliznaPl():
         raf_manufacturer = soup.findAll('img')
         if len(raf_manufacturer) > 2:
             manufacturer = raf_manufacturer[2].get('alt')
+        """
         o = Ofert(title, price, currency, address, img, manufacturer)
         return o
 
     def get_next(self, soup):
+        """
         next_page_raw = soup.findAll(attrs={"class": "li_listing li_listing_next fl pointer"})
         if next_page_raw:
             raw_a_np = next_page_raw[0].findAll('a')
@@ -543,6 +647,16 @@ class MagicznabieliznaPl():
                 result = raw_a_np[0].get('href')
                 # path = ''.join([self.response_object.protocol,'://', self.response_object.domain, result])
                 return result
+        """
+        next_page_raw = soup.find('div', {'class', 'pagination'})
+        all_page = next_page_raw.findAll('a')
+        last_page = all_page[-1]
+        if last_page.text == '»':
+            next_page = last_page.get('href')
+            path = ''.join([self.response_object.protocol, '://', self.response_object.domain, next_page])
+            return path
+        else:
+            return None
 
 
 class EkskluzywnaPl():
@@ -561,10 +675,11 @@ class EkskluzywnaPl():
         if raw_tab:
             address = raw_tab[0].get('data-url')
 
-        raw_img = soup.findAll('img')
-        if raw_img:
-            img = raw_img[0].get('src')
-            title = raw_img[0].get('title')
+        raw_title = soup.find('img', {'class': 'lazyImg'})
+        if raw_title:
+            img = raw_title.get('data-src')
+            title = raw_title.get('alt')
+
         raw_price = soup.findAll(attrs={'itemprop': 'price'})
         if raw_price:
             price = raw_price[0].get('content')
@@ -662,7 +777,7 @@ class AnaisApparelPl():
                 return path
 
 
-class MorgantiPl():
+class WwwMorgantiPl():
     def __init__(self, response_object):
         self.response_object = response_object
 
@@ -1183,7 +1298,10 @@ class WwwHurtowniaOlenkaPl():
                 raw_manufacturer = raw.find('ul', {'class': 'ListaOpisowa'})
                 if raw_manufacturer:
                     tmp_manufacturer = raw_manufacturer.find('a')
-                    manufacturer = tmp_manufacturer.text.strip()
+                    if tmp_manufacturer:
+                        manufacturer = tmp_manufacturer.text.strip()
+                    else:
+                        manufacturer = None
         o = Ofert(title, price, currency, address, img, manufacturer)
         return o
 
@@ -1245,7 +1363,7 @@ class ObsessiveCom():
         self.response_object = response_object
 
     def parse_catalog(self, soup):
-        for field in soup.find_all('li', {"class": "item"}):
+        for field in soup.find_all('div', {"class": "product-box"}):
             yield field
 
     def parse_entity(self, soup):
@@ -1255,13 +1373,16 @@ class ObsessiveCom():
         address = NotImplemented
         img = NotImplemented
         manufacturer = NotImplemented
-        raw = soup.find('a', {'class': 'product-image'})
-        if raw:
-            address = raw.get('href')
-            title = raw.get('title')
-        raw_img = soup.find('img', {'class': 'img-responsive'})
+
+        raw_addres = soup.find('a', {'class': 'product-box__image-wrapper'})
+        if raw_addres:
+            address = raw_addres.get('href')
+        raw_img = soup.find('img', {'class': 'product-box__image'})
+
         if raw_img:
-            img = raw_img.get('data-desktop')
+            title = raw_img.get('alt')
+            img = raw_img.get('data-src')
+
         raw_price = soup.find('span', {'class': 'price'})
         if raw_price:
             temp_price = raw_price.text.split('\xa0')
@@ -1653,7 +1774,7 @@ class WwwSisiPl():
         img = NotImplemented
         manufacturer = NotImplemented
 
-        raw_img = soup.find('img', {'class': 'big'})
+        raw_img = soup.find('img', {'loading': 'lazy'})
         if raw_img:
             title = raw_img.get('alt')
             img = ''.join(
@@ -1697,7 +1818,8 @@ class WwwSisiPl():
         return o
 
     def get_next(self, soup):
-        raw_pagination = soup.find('a', {'class': 'next'})
+        raw_pagination = soup.find('a', {'title': 'Następna strona'})
+
         if raw_pagination:
             return ''.join(
                 [

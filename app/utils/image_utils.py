@@ -50,7 +50,11 @@ class ImageUtils():
 
     @property
     def main_color(self) -> str:
-        return self.color_thief.get_color(quality=1)
+        try:
+            return self.color_thief.get_color(quality=1)
+        except:
+            log.warn('Can\'t get color from image')
+            return None
 
     @property
     def get_contol_sum(self) -> str:
@@ -63,8 +67,6 @@ class WebImageUtils(ImageUtils):
             r = requests.get(url_to_image)
             if r.status_code == 200:
                 path = fu.utworz_tmp_plik(f, r.content)
-                # super(WebImageUtils, self)(path)
                 super().__init__(path)
-                # self.set_image(path)
             else:
                 log.warn('Download error {}'.format(r.status_code))

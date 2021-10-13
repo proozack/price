@@ -1,8 +1,15 @@
 from celery import Celery
 import time
 import redis
+from app.modules.imp_price.services import Services as PpServices 
+
 import logging
 log = logging.getLogger(__name__)
+
+# from localconfig import CeleryApp as cfg
+from app import create_app
+app = create_app()
+app.app_context().push()
 
 app = Celery('tasks', broker='redis://192.168.254.201:6379/0')
 app.conf.result_backend = 'redis://192.168.254.201:6379/1'
@@ -27,3 +34,10 @@ def counting(x, y):
 def add(x, y):
     log.info('Zlecam task dla danych x: %r y: %r', x, y)
     return counting(x, y)
+
+@app.task
+def product_page_parase(result):
+    pps = PpServices()
+    pps.process_product_pages(result)
+
+

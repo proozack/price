@@ -8,6 +8,7 @@ from app.utils.local_type import TempProduct, MenuLink
 from app.utils.db_transaction import commit_after_execution
 from sqlalchemy import desc, asc
 from sqlalchemy.orm import aliased
+from datetime import date
 
 import logging
 log = logging.getLogger(__name__)
@@ -140,6 +141,14 @@ class EntryPointsDbUtils():
             self.add_enty_point_with_check_shop(entry_point, category_id)
 
 
+    def get_entry_point_by_id(self, entry_point_id):
+        return db.session.query(
+            EntryPoint.id,
+            EntryPoint.url
+        ).filter(
+            EntryPoint.id == entry_point_id
+        ).first()
+
 class ShopDbUtils():
     def is_shop_exists(self, url: str):
         return db.session.query(
@@ -258,6 +267,28 @@ class OfertDbUtils():
         o = o.order_by(Shop.is_brand_shop.asc(), Ofert.manufacturer.asc())
         return o.all()
 
+
+    def get_all_ofert_by_creation_date(self, creation_date=date.today()) -> list:
+        return db.session.query(
+            Ofert.id,
+            Ofert.url,
+            Ofert.image,
+            Ofert.title,
+            Ofert.price,
+            Ofert.entry_point_id,
+            Ofert.manufacturer,
+            Ofert.currency,
+            Ofert.creation_date
+        ).filter(
+            (Ofert.creation_date).cast(Date) == creation_date
+        ).all()
+
+    def get_all_date(self) -> list:
+        return db.session.query(
+            (Ofert.creation_date).cast(Date)
+        ).group_by(
+            (Ofert.creation_date).cast(Date)
+        ).all()
 
 class BrandDbUtils():
     def new_brand(self, brand_name, logo=None):
@@ -554,15 +585,32 @@ class ProductDbUtils():
         * *ofert_id* int --
           Ofert ID
         """
+        return self.bq_get_unique_oferts(**kwargs).all()
+
+    def bq_get_unique_oferts(self, **kwargs):
+        """
+        :Keyword Arguments:
+        * *category_id* int --
+          ID Category
+        * *entry_point_id* int --
+          ID entry point
+        * *ofert_id* int --
+          Ofert ID
+        * *create_date* date --
+          Date when offert was created
+        """
         category_id = kwargs.get('category_id')
         entry_point_id = kwargs.get('entry_point_id')
         ofert_id = kwargs.get('ofert_id')
+        create_date = kwargs.get('create_date')
 
         result =  db.session.query(
             Ofert.url,
             Ofert.title,
             Ofert.manufacturer.label('main_brand'),
-            Category.name.label('main_category')
+            Category.name.label('main_category'),
+            Ofert.price,
+            Ofert.image
         ).join(
             EntryPoint,
             EntryPoint.id == Ofert.entry_point_id
@@ -573,7 +621,9 @@ class ProductDbUtils():
              Category.name,
              Ofert.manufacturer,
              Ofert.url,
-             Ofert.title
+             Ofert.title,
+             Ofert.price,
+             Ofert.image
         )
 
         if category_id:
@@ -585,7 +635,10 @@ class ProductDbUtils():
         if ofert_id:
             result = result.filter(Ofert.id == ofert_id)
 
-        return result.all()
+        if create_date:
+            result = result.filter(Ofert.creation_date.cast(Date) == create_date)
+
+        return result
 
 
 class ProductStatementDbUtils():

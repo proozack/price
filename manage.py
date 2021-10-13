@@ -5,6 +5,7 @@ from app import create_app
 from app import db
 from app.modules.ims.enrich_images import EnrichImages
 from app.modules.price.services import Services as PriceServices
+from app.modules.imp_price.services import Services as ImpPriceServices
 # from app.modules.ims.models import Image
 
 app = create_app()
@@ -195,6 +196,55 @@ def run_processing():
     run_downloading()
     tags_ofert()
     send_notification()
+
+
+@manager.command
+def copy_product_to_imp(scan_date=None):
+    """
+    Copy product from price_ofert to imp_product
+    """
+    log.info('Run copy product from price_ofert to imp_price')
+    s = ImpPriceServices()
+    if scan_date:
+        count = s.copy_product_to_imp(scan_date)
+    else:
+        count = s.copy_product_to_imp()
+    log.info('Copy {} objects'.format(count))
+
+
+@manager.command
+def copy_all_product_to_imp():
+    """
+    Copy all product from price_ofert to imp_product
+    """
+    log.info('Run copy all product from price_ofert to imp_price')
+    s = ImpPriceServices()
+    s.copu_all_produc_to_imp()
+
+@manager.command
+def try_download_page(url, show_log=False):
+    """
+    Try download and parse product page
+    """
+    s = ImpPriceServices()
+    if show_log:
+        show_log = bool(show_log)
+    s.try_download_page(url, show_log)
+
+@manager.command
+def parase_product_pages(shop_id):
+    """
+    Try download and parse product page
+    """
+    s = ImpPriceServices()
+    s.parase_product_pages(shop_id)
+
+@manager.command
+def run_parasing_pages():
+    from tasks import product_page_parase
+    ipp = ImpPriceServices()
+    for result in ipp.get_pages(7):
+        product_page_parase.delay(result)
 
 if __name__ == "__main__":
     manager.run()

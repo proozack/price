@@ -28,6 +28,7 @@ api = Api(catch_all_404s=True, errors=restful_error_messages.errors)
 def create_app():
     """Construct the core application."""
     app = Flask(__name__, instance_relative_config=False)
+    # db = SQLAlchemy()
     # SESSION_TYPE = 'redis'
     # session = Session(app)
     app.config.from_object(Config)

@@ -32,3 +32,14 @@ class BaseModel():
             field: ''
             for field in self.get_attributes_list()
         }
+
+    def get_dict(self):
+        fields = {}
+        for key in self.get_attributes_list():
+            fields.update(
+                {
+                    key: getattr(self, key)
+                }
+            )
+        return fields
+

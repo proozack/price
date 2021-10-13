@@ -40,6 +40,7 @@
                 {% for field in resource.fields_name -%}
                     <th>{{ field }}</th>
                 {% endfor %}
+                <th>-</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -48,6 +49,7 @@
                 {% for field in resource['fields'] -%}
                 <td> {{ result.__getitem__(field) }} </td>
                 {% endfor %}
+                <td><button style="cursor: pointer;" onclick="window.open('http://py2.eu:7001/entry_point/{{ result.__getitem__('ep_id')}}/1','_blank')">Lista</button></td>
             </tr>
             {% endfor %}
             </tbody>
@@ -57,9 +59,10 @@
 
     <script>
         $(document).ready( function () {
-            $('#shops').DataTable({
+             $('#shops').DataTable({
                   "pageLength": 50
-            });
-        } );
+             });
+
+            } );
     </script>
 {% endblock %}
