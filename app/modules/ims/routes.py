@@ -2,7 +2,7 @@ from app import api
 # from .main_page import (HelloWorld, Users, UserEP, LogOut,
 # SignIn, SignUp, Status, Auth, UiRouterNavigation, OfertList)
 from .main_page import HelloWorld
-from .main_page import (CategoryView, ProductView, ShopsStats, Imports, DtImports, Tags, DtTags, Tag)
+from .main_page import (CategoryView, ProductView, ShopsStats, Imports, DtImports, Tags, DtTags, Tag, EntryPoint)
 
 import logging
 log = logging.getLogger(__name__)
@@ -17,6 +17,8 @@ api.add_resource(Tags, '/tags')
 api.add_resource(Tag, '/tag/<string:tag>')
 api.add_resource(DtImports, '/dt_imports')
 api.add_resource(DtTags, '/dt_tags')
+api.add_resource(EntryPoint, '/entry_point/<int:entry_point_id>/<int:page>')
+
 """
 #api.add_resource(Users, '/users')
 api.add_resource(Users, '/users')

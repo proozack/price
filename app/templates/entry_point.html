@@ -45,25 +45,19 @@
                 <div class="col-md-3 col-sm-6">
                     <div class="product-grid">
                         <div class="product-image">
-                            <a href="{{ resource['real_url'] }}product/{{ entity.product_id  }}" />
+                            <a href="{{ entity.product_url }}" target="_blank"/>
                                     <img src="{{ entity.image }}" style="height: 400px;" />
                             </a>
                         </div>
                         <div class="product-discount-label">
-                            {{entity.count}}
+                            Tutaj będą kategorie
                         </div>
                         <div class="social" style="background-color: #FFFFFF; border: 1px solid red;">
                             Product ID: {{ entity.product_id }}
                         </div>
                         <div class="product-content">
                             <h3 class="title"><a href="#"><b>{{ entity.brand }}</b> - <i>{{ entity.title }}</i></a></h3>
-                            <div class="price">
-                            {% if entity.min_price == entity.max_price %}
-                                {{entity.min_price}} {{entity.currency}} 
-                            {% else %}
-                                {{entity.min_price}} {{entity.currency}} - {{entity.max_price}} {{entity.currency}} 
-                            {% endif %}
-                            </div>
+                            <div class="price">{{entity.price}}</div>
                         </div>
                     </div>
             

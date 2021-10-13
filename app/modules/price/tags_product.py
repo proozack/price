@@ -22,8 +22,6 @@ class TagsProduct():
         tp = self.manage_category(tp)
         tp = self.manage_manufacturer(tp)        
 
-        # log.info('Oferta %r', tp.get_dict())
-
         if tp.title:
             tags_list = [
                 tag
@@ -33,8 +31,6 @@ class TagsProduct():
             # log.info('TP: %r -> %r\t%r', tp.id,  tp.url, tags_list)
             if hasattr(tp, 'brand_id') and hasattr(tp, 'category_id'):
                 self.save_tags_list(tags_list, tp.id, tp.brand_id, tp.category_id)
-            # else:
-            #     log.warning('skipping ofert %s', tp.id)
 
     def save_tags_list(self, tags_list, ofert_id, brand_id, category_id):
         tags_string = ';'.join(tags_list)
@@ -68,14 +64,8 @@ class TagsProduct():
                 product_id = product_id[0]
             else: 
                product_id = None
-            # log.info('Product_id: %r', product_id)  
         else:
-            # log.info('Product_id: %r', product_id)
             product_id = result
-        # log.info('Result %r - %r ',len(result), result)
-        
-        # log.info('Tag_list %r',len(tags_list))
-        # log.info('To jest result %r, Tag_list: %r ofert_id: %r product_id: %r', result, tags_list, ofert_id, product_id)
 
         if product_id:
             # log.info('Products found list %r', product_id)

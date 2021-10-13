@@ -17,7 +17,11 @@
 <section class="section">
     <div class="container">
     {% if entities|list|length %}
-        <h1>{{ resource['description'] }}</h1>
+        <b>
+            <img src="{{resource['brand_image'] or 'http://py2.eu:7003/img/nologo.png' }}" style="float:left; height: 50px; padding-right: 10px;"/>
+            <i>{{ resource['description'] }}</i>
+        </b>
+        <hr/>
         {% for result in entities -%} 
         <div class="row">
             <div class="col">
@@ -50,6 +54,7 @@
                             </a>
                         {% endfor %}
                     </li>
+                    <li><b>Category:</b> {{ result.category or '' }}</li>
                 </ul>
             </div>
         </div>

@@ -1,4 +1,5 @@
 from app import db
+import requests
 from .db_utils import EntryPointsDbUtils
 # from app.utils.local_type import Ofert
 from app.utils.validator import is_web_page
@@ -13,6 +14,7 @@ from app.modules.price.tags_product import TagsProduct
 from app.modules.price.normalize_product import NormalizeProduct
 from app.modules.price.product_support import ProductSupport 
 from app.modules.price.db_utils import KeyWordLinkDbUtils, TagWordLinkDbUtils, BrandDbUtils, CategorySynonymDbUtils, CategoryDbUtils
+from app.modules.price.db_utils import CategoryDbUtils, ProductDbUtils
 
 import logging
 log = logging.getLogger(__name__)
@@ -131,3 +133,20 @@ class Services():
         bdu = BrandDbUtils()
         id = bdu.add_brand(brand_name.lower().strip(), logo)
         log.info('Add brand under id {}'.format(id) )
+
+    def send_notification(self):
+        ct = CategoryDbUtils()
+        pd = ProductDbUtils()
+        message = []
+        category_list = ct.get_all_category()
+        for category in category_list:
+            list_id_products = [
+                i[0]
+                for i in pd.get_product_for_catgeory_view(category[0])
+            ]
+            message.append('{} -> {}'.format(category[1], len(list_id_products)))
+        result = '\n'.join(message)
+        print(result)
+
+        data = {'message': result}
+        r = requests.post('http://192.168.254.200:5000/send', data=data)

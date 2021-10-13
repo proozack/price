@@ -1,4 +1,5 @@
 import datetime
+from datetime import date
 import time
 import uuid
 from itsdangerous import JSONWebSignatureSerializer as Serializer
@@ -17,9 +18,10 @@ from app.utils.local_type import MenuLink
 from app.utils.url_utils import UrlUtils
 from app.modules.price.models import Shop, MetaCategory, Category, EntryPoint
 from app.modules.price.models import Ofert, Image
+from app.modules.imp_price.models import ImpCatalogPage 
 from conf.localconfig import Config
 from app.modules.price import db_utils
-from app.modules.price.db_utils import ProductDbUtils
+from app.modules.price.db_utils import ProductDbUtils, TagDbUtils, EntryPointsDbUtils
 from app.utils.resource import datatable_sqla
 # from sqlalchemy.sql.expression import func
 
@@ -45,6 +47,65 @@ menu = {
         'Shoes': [],
     }
 }
+
+class EntryPoint(Resource):
+
+    def get(self, entry_point_id, page=1):
+        now = datetime.datetime.now()
+        pdbu = ProductDbUtils()
+        epdbu = EntryPointsDbUtils()
+        entry_point = epdbu.get_entry_point_by_id(entry_point_id)
+        result = None
+        count = 1
+        o = pdbu.bq_get_unique_oferts(entry_point_id=entry_point_id, create_date=date.today())
+        count = o.count()
+        wyn = o.paginate(page, 32)
+        result = datetime.datetime.now()
+
+        if wyn:
+            entit = [
+                {
+                    'product_id': None,
+                    'title': getattr(i, 'title'),
+                    'image':  i.image,
+                    'count': i.count,
+                    'price': i.price,
+                    'currency': 'zł',
+                    'hash': '',
+                    'brand': i.main_brand,
+                    'product_url': i.url,
+                }
+                for i in wyn.items
+            ]
+        else:
+            entit = []
+
+        entities = entit
+
+        ct = db_utils.CategoryDbUtils()
+        entities = entit
+
+        template = render_template(
+            'entry_point.html',
+            resource={
+                'title': '2py.eu',
+                'description': 'Selected entry point: {}'.format(entry_point.url),
+                'icon_path': ''.join([Config.STATIC_URL, 'logo.png']),
+                'real_url': Config.REAL_URL,
+                'static_url': Config.STATIC_URL,
+                'scan_date': result,
+                'menu': menu,
+                'category': entry_point.url,
+                'page': page,
+                'count': count,
+                'max_page': int(count/32) if count % 32 == 0 else int(count/32) + 1
+            },
+            entities=entities,
+            menu = ct.get_category_for_menu()
+        )
+        resp = make_response(template)
+        resp.mimetype = 'text/html'
+        return resp
 
 
 class Imports(Resource):
@@ -91,6 +152,7 @@ class DtImports(Resource):
 class Tag(Resource):
     def get(self, tag):
         ct = db_utils.CategoryDbUtils()
+        tdb = TagDbUtils()
         count = 0
         page = 1
         result = None
@@ -99,7 +161,9 @@ class Tag(Resource):
         u = UrlUtils()
         pdu = db_utils.TagDbUtils()
         o = pdu.get_product_by_tag(tag)
+        meaning = tdb.get_meaning_by_tag(tag)
         now = datetime.datetime.now()
+        meaning = meaning[0] if meaning[0] else 'Not set'
         entities = [
             {
                 'product_id': i.product_id,
@@ -119,6 +183,8 @@ class Tag(Resource):
                 'tags': i.all_tags.split(';'),
                 'main_tags':  i.tags.split(';'),
                 'category':  i.category,
+                'subcategory': i.subcategory,
+                'colortags': i.colortags,
             }
             for i in o
         ]
@@ -131,7 +197,7 @@ class Tag(Resource):
             'tag.html',
             resource={
                 'title': '2py.eu',
-                'description': 'Selected tag: {}'.format(tag),
+                'description': 'Selected tag: "{}", meaning: "{}"'.format(tag, meaning),
                 'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
                 'real_url': Config.REAL_URL,
                 'static_url': Config.STATIC_URL,
@@ -339,6 +405,7 @@ class CategoryView(Resource):
                     'max_price': i.max_price,
                     'currency': 'zł',
                     'hash': '',
+                    'brand': i.brand
                 }
                 for i in wyn.items
             ]
@@ -467,6 +534,7 @@ class ProductView(Resource):
         u = UrlUtils()
         pdu = ProductDbUtils()
         o = pdu.get_product_by_product_def_id(wyn)
+        tit = pdu.get_product_title_by_id(wyn)
         now = datetime.datetime.now()
         entities = [
             {
@@ -492,7 +560,8 @@ class ProductView(Resource):
             'product.html',
             resource={
                 'title': '2py.eu',
-                'description': 'Selected product: {}'.format('Dupa'),
+                'description': '{}'.format(' '.join([tit[1].capitalize(), tit[3].capitalize()])),
+                'brand_image': tit[2],
                 'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
                 'real_url': Config.REAL_URL,
                 'static_url': Config.STATIC_URL,
@@ -716,3 +785,4 @@ class OfertList(PrivateResource):
             for i in o
         ]
         return lista
+

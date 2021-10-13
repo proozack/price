@@ -45,7 +45,7 @@
 
 <script>
 $(document).ready(function() {
-$('#example').DataTable( {
+    var table = $('#example').DataTable( {
     "processing": true,
     "serverSide": true,
     "ajax": "{{ resource.dt_config.ajax }}",
@@ -58,11 +58,19 @@ $('#example').DataTable( {
             "class":          "details-control",
             "orderable":      false,
             "data":           null,
-            "defaultContent": "<button>Click Me</button>"
+            "defaultContent": "<button>Szczegóły</button>"
         }
         ],
         "order": [[1, 'asc']]
     });
-});
+    $('#example tbody').on( 'click', 'button', function () {
+        var data = table.row( $(this).parents('tr') ).data();
+        // alert( data.id +"'s salary is: "+ data[ 5 ] );
+        // alert(JSON.stringify(data));
+        // window.location.replace("http://py2.eu:7001/tag/"+data.value);
+        window.location.href = './tag/' + data.value;
+    } );
+}
+);
 </script>
 {% endblock %}
