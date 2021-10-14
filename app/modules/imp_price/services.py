@@ -71,7 +71,9 @@ class Services():
         pp = self.get_product_page(result.get('url'))
         pp.imp_catalog_page_id = result.get('id')
         if pp.deleted:
+            icpdbu = ImpCatalogPageDbU()
             log.info('Deactivete product_id {}'.format(pp.imp_catalog_page_id))
+            icpdbu.deactivate_product(pp.imp_catalog_page_id)
         else:
             ippdbu.c_save_product_page(pp)
 

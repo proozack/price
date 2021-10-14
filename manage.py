@@ -240,10 +240,10 @@ def parase_product_pages(shop_id):
     s.parase_product_pages(shop_id)
 
 @manager.command
-def run_parasing_pages():
+def run_parasing_pages(shop_id):
     from tasks import product_page_parase
     ipp = ImpPriceServices()
-    for result in ipp.get_pages(7):
+    for result in ipp.get_pages(shop_id):
         product_page_parase.delay(result)
 
 if __name__ == "__main__":

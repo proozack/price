@@ -454,7 +454,11 @@ class ProductDbUtils():
             TagProduct.tag_product_def_id
         ).cte('product')
 
-        max_date = db.session.query((func.max(Ofert.creation_date)).cast(Date))
+        max_date = db.session.query(
+                func.max(
+                    Ofert.creation_date.cast(Date)
+                ).cast(Date)
+        )
 
         return db.session.query(
             product.c.product_id,

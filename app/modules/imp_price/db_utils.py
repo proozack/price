@@ -1,3 +1,4 @@
+import datetime
 from app import db
 from sqlalchemy import and_
 from app.modules.imp_price.models import (ImpCatalogPage, ImpProductPage, ImpProductPrice)
@@ -53,8 +54,13 @@ class ImpCatalogPageDbU():
             ImpProductPrice.scan_date == scan_date
         ).all()
 
-    # def deactivate_product(self, product_id):
-        
+    @commit_after_execution
+    def deactivate_product(self, catalog_page_id):
+        result = self.get_catalog_page(catalog_page_id)
+        result.active = False
+        result.last_update_date = datetime.datetime.now()
+        db.session.flush()
+ 
 
     def get_url_by_shop_id(self, shop_id):
         return db.session.query(
@@ -64,8 +70,18 @@ class ImpCatalogPageDbU():
             EntryPoint,
             EntryPoint.id == ImpCatalogPage.entry_point_id
         ).filter(
-            EntryPoint.shop_id == shop_id
+            and_(
+                EntryPoint.shop_id == shop_id,
+                ImpCatalogPage.active == True
+                )
         ).all()
+
+    def get_catalog_page(self, catalog_page_id):
+        return db.session.query(
+            ImpCatalogPage
+        ).filter(
+            ImpCatalogPage.id == catalog_page_id
+        ).one_or_none()
 
 
 class ImpProductPageDbU():
@@ -97,7 +113,8 @@ class ImpProductPageDbU():
             for field in pp.get_dict():
                 # setattr(result, field, local_dict.get(field))
                 value = local_dict.get(field) if local_dict.get(field) != NotImplemented else None
-                setattr(ipp, field, value)
+                setattr(result, field, value)
+            result.last_update_date = datetime.datetime.now()
         db.session.flush()
 
     def is_exists(self, imp_catalog_page_id):
@@ -106,6 +123,7 @@ class ImpProductPageDbU():
         ).filter(
             ImpProductPage.imp_catalog_page_id == imp_catalog_page_id,
         ).one_or_none()
+
 
     def get_product_page_by_id(self, product_page_id):
         return db.session.query(
