@@ -1,7 +1,7 @@
 from flask_script import Manager
 from flask_migrate import Migrate, MigrateCommand
-from wm import create_app
-from app import db
+# from wm import create_app
+from price import db
 #from conf.localconfig import Config
 
 app = create_app()

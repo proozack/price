@@ -1,7 +1,13 @@
-from app import create_app
+from price import create_app
+import localconfig
 
-app = create_app()
+application = create_app(localconfig.DevConfig())
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0')
+    application.run(host='0.0.0.0')
+
+# app = create_app()
+
+# if __name__ == "__main__":
+#     app.run(host='0.0.0.0')
 
