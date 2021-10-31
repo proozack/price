@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 import logging
+# from price import create_app
+from app import application
+from price import db
 from flask_script import Manager
-from app import create_app
-from app import db
-from app.modules.ims.enrich_images import EnrichImages
-from app.modules.price.services import Services as PriceServices
-from app.modules.imp_price.services import Services as ImpPriceServices
-# from app.modules.ims.models import Image
+from price.modules.ims.enrich_images import EnrichImages
+from price.modules.price.services import Services as PriceServices
+from price.modules.imp_price.services import Services as ImpPriceServices
 
-app = create_app()
+# app = create_app()
+
 log = logging.getLogger(__name__)
 
-manager = Manager(app)
+manager = Manager(application)
 
 
 @manager.shell
@@ -89,7 +90,8 @@ def parse_ofert(ofert_id=None, shop_id=None):
 
 
 @manager.command
-def tags_ofert(ofert_id=None, shop_id=None, entry_point_id=None):
+def tags_ofert(ofert_id=None, shop_id=None, entry_point_id=None, date_scan=None):
+    scan_date = date_scan
     """
     Run tags ofert
     """
@@ -99,10 +101,12 @@ def tags_ofert(ofert_id=None, shop_id=None, entry_point_id=None):
         log.info('Run parasing ofert: Shop_id:{}'.format(shop_id))
     elif entry_point_id:
         log.info('Run parasing ofert: Entry_Point_id:{}'.format(entry_point_id))
+    elif scan_date:
+        log.info('Run parasing ofert: Scan Date: :{}'.format(scan_date))
     else:
         log.info('Run parasing all oferts')
     s = PriceServices()
-    s.tags_ofert(ofert_id, shop_id, entry_point_id)
+    s.tags_ofert(ofert_id, shop_id, entry_point_id, scan_date)
 
 
 @manager.command
@@ -130,9 +134,9 @@ def enrich_image():
     Run enriching images process
     """
     log.info('Start enrich images ... ')
-    with app.app_context():
-        e = EnrichImages()
-        e.parase_all_images()
+    # with app.app_context():
+    e = EnrichImages()
+    e.parase_all_images()
 
 
 @manager.command
@@ -234,17 +238,45 @@ def try_download_page(url, show_log=False):
 @manager.command
 def parase_product_pages(shop_id):
     """
-    Try download and parse product page
+    Run parasing product page for shop_id, synchronous commissioning
     """
     s = ImpPriceServices()
     s.parase_product_pages(shop_id)
 
 @manager.command
-def run_parasing_pages():
-    from tasks import product_page_parase
+def run_parasing_pages(shop_id=None, url_str=None, limit=None):
+    """
+    Run parasing product page for shop_id, Run as task celery
+    """
+    from price.tasks import product_page_parase
     ipp = ImpPriceServices()
-    for result in ipp.get_pages(7):
+    if limit is not None:
+        limit = int(limit) - 1
+    oi = 0
+    for oi, result in enumerate(ipp.get_pages(shop_id, url_str)):
+        if limit is not None and oi > limit:
+            log.info('I stop working because a limit has been set: {}'.format(limit + 1))
+            break
+        log.info('I order url processing: {}'.format(result.url))
         product_page_parase.delay(result)
+    log.info('I oreder {} tasks'.format(oi))
+
+
+@manager.command
+def run_downloading_ep(entry_point_id):
+    """
+    Run downloading page for entry_point_id, run as celery task
+    """
+    from price.tasks import download_catalog
+    ipp = ImpPriceServices()
+    download_catalog.delay(entry_point_id)
+
+
+@manager.command
+def c_tags_product(ofert_id=None, shop_id=None, entry_point_id=None, date_scan=None):
+    from price.tasks import c_tags_product
+    scan_date = date_scan
+    c_tags_product.delay(ofert_id, shop_id, entry_point_id, date_scan)
 
 if __name__ == "__main__":
     manager.run()
