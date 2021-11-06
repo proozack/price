@@ -61,7 +61,7 @@ class ImpCatalogPageDbU():
         result.last_update_date = datetime.datetime.now()
         db.session.flush()
 
-    def get_not_processing_url(self, url_str):
+    def get_not_processing_url(self, url_str=None, entry_point_id=None):
         query = db.session.query(
             ImpCatalogPage.id,
             ImpCatalogPage.url
@@ -78,7 +78,24 @@ class ImpCatalogPageDbU():
         if url_str:
             search_str = '%{}%'.format(url_str)
             query = query.filter(ImpCatalogPage.url.like(search_str))
+
+        if entry_point_id:
+            query = query.filter(ImpCatalogPage.entry_point_id == entry_point_id)
+
         return query.all()
+
+    def get_processed_entry_points(self):
+        return db.session.query(
+            ImpCatalogPage.entry_point_id
+        ).join(
+            ImpProductPage,
+            ImpProductPage.imp_catalog_page_id == ImpCatalogPage.id,
+            isouter = True
+        ).filter(
+            ImpProductPage.id.isnot(None)
+        ).group_by(
+            ImpCatalogPage.entry_point_id
+        ).all()
 
     def get_url_by_shop_id(self, shop_id):
         return db.session.query(

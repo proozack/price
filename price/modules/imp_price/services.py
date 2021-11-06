@@ -62,11 +62,14 @@ class Services():
         product_page = pd.get_data()
         return product_page 
 
-    def get_pages(self, shop_id=None, url_str=None):
+    def get_pages(self, shop_id=None, url_str=None, entry_point_id=None):
         icpdbu = ImpCatalogPageDbU()
-        if shop_id is None:
+        if shop_id is not None:
+            return icpdbu.get_url_by_shop_id(shop_id)
+        elif url_str is not None:
             return icpdbu.get_not_processing_url(url_str)
-        return icpdbu.get_url_by_shop_id(shop_id)
+        else:
+            return icpdbu.get_not_processing_url(None, entry_point_id)
 
     def process_product_pages(self, result):
         ippdbu = ImpProductPageDbU()
@@ -89,3 +92,20 @@ class Services():
             self.process_product_pages(param)
             break
 
+
+    def get_processed_entry_points(self):
+        icpdbu = ImpCatalogPageDbU()
+        return icpdbu.get_processed_entry_points()
+
+    """
+    def process_new_product_pages(self):
+        icpdbu = ImpCatalogPageDbU()
+        for entry_point_id in icpdbu.get_processed_entry_points():
+            log.info('Entry point ID: %r', entry_point_id)
+            for result in self.get_pages(None, None, entry_point_id):
+                param = {
+                    'id': result.id,
+                    'url': result.url
+                }
+                self.process_product_pages(param)
+    """

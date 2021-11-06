@@ -376,7 +376,10 @@ class IntymnaPl():
             pp.color.append(tmp_color.get('title'))
         if len(pp.color) == 0: 
             raw_color = soup.find('span', {'class', 'proddeflineinputdef'})
-            pp.color.append(raw_color.text)
+            if raw_color:
+                pp.color.append(raw_color.text)
+            else:
+                pp.color = []
 
         raw_size = soup.find('select', {'class': 'input_size'})
         lista = []
@@ -581,6 +584,70 @@ class UlubionabieliznaPl():
                 return path
 
 
+    def get_product_page(self, soup):
+        pp = ProductPage()
+
+        raw_title = soup.find('div', {'class': 'projector_navigation'})
+        if raw_title is None:
+            log.info('Product not found')
+            pp.deleted = True
+            pp.active = False
+            return pp
+
+        pp.title = raw_title.text.strip()
+        raw_description = soup.find('div', {'class': 'projector_description'})
+        if raw_description:
+            pp.description = raw_description.text.strip()
+        else:
+            pp.description = None
+
+        raw_brand = soup.find('a', {'class': 'brand'})
+        if raw_brand:
+            pp.brand = raw_brand.text.strip()
+        else:
+            pp.brand = None
+        raw_path = soup.find('div', {'class': 'breadcrumbs'})
+        nl = []
+        for temp_path in raw_path.findAll('li'):
+            nl.append(temp_path.text.strip())
+        pp.category = nl[-2:-1][0]
+        path = '/'.join(nl)
+        pp.attributes = {'product_path': path}
+        pp.color = []
+        pp.size = []
+        pp.composition = None
+        raw_color_size = soup.findAll('div', {'class': 'product_section_sub'})
+        if len(raw_color_size) == 3:
+            raw_color = []
+            raw_size = raw_color_size[0]
+        elif len(raw_color_size) == 4:
+            raw_color = raw_color_size[0]
+            raw_size = raw_color_size[1]
+        else:
+            raw_color = []
+            raw_size = []
+
+        if raw_color:
+            colors = []
+            for color in raw_color.findAll('a'):
+                colors.append(color.get('title').strip())
+            pp.color = colors
+
+        if raw_size:
+            size = []
+            for sizes in raw_size.findAll('a'):
+                size.append(sizes.find('b').text.strip())
+            pp.size = size
+
+        img = []
+        for raw_img in soup.findAll('img', {'class' :'photo'}):
+            img.append({
+                'big': ''.join([self.response_object.protocol, '://', self.response_object.domain, raw_img.get('data-zoom-image')]),
+                'thumbs': ''.join([self.response_object.protocol, '://', self.response_object.domain, raw_img.get('src')])
+            })
+        pp.images = img
+        return pp
+
 class MagicznabieliznaPl():
     def __init__(self, response_object):
         self.response_object = response_object
@@ -715,7 +782,6 @@ class EkskluzywnaPl():
     def get_product_page(self, soup):
         pp = ProductPage()
         raw_brand = soup.find('span', {'class': 'pinfo-producer__text'})
-        log.info('raw brand %r', raw_brand)
         if raw_brand is None:
             log.warning('Product not exist: Product not found')
             pp.deleted = True
@@ -736,11 +802,14 @@ class EkskluzywnaPl():
         pp.attributes = {'product_path': nl}
 
         raw_description = soup.find('div', {'class': 'product-description'})
-        list_des = raw_description.findAll('p')
-        descr = []
-        for des in list_des:
-            descr.append(des.text.strip())
-        pp.description = ' '.join(descr)
+        if raw_description:
+            list_des = raw_description.findAll('p')
+            descr = []
+            for des in list_des:
+                descr.append(des.text.strip())
+            pp.description = ' '.join(descr)
+        else:
+            pp.description = None
 
         img = []
         for ele in soup.findAll('img', {'itemprop': 'image'}):
@@ -775,6 +844,7 @@ class EldarPl():
             raw_img = raw_string[0].findAll('img')
             if raw_img:
                 img = raw_img[0].get('data-src')
+                img = ''.join([self.response_object.protocol, '://', self.response_object.domain, img])
         raw_price = soup.findAll(attrs={"class": "price"})
         if raw_price:
             tmp_price = raw_price[0].text.split(' ')
@@ -1432,6 +1502,55 @@ class WwwHurtowniaOlenkaPl():
                 if a.has_attr('class'):
                     is_active = True
         return None
+
+    def get_product_page(self, soup):
+        pp = ProductPage()
+
+        not_exists = soup.find('h1', {'class': 'StrNaglowek'})
+        if not_exists is not None and not_exists.text.strip() == 'Brak danych do wyświetlenia':
+            log.info('Not found: %r', not_exists.text.strip())
+            pp.deleted = True
+            pp.active = False
+            return pp
+
+
+        raw_title = soup.find('h1', {'itemprop': 'name'})
+        pp.title = raw_title.text.strip()
+
+        raw_brand = soup.find('strong', {'itemprop': 'brand'})
+        if raw_brand:
+            pp.brand = raw_brand.get('content')
+        else:
+            pp.brand = None
+
+        raw_description = soup.find('div', {'itemprop': 'description'})
+        pp.description = raw_description.text.strip()
+
+
+        raw_path = soup.find('div', {'id': 'Nawigacja'})
+        nl = []
+        for ele in raw_path.text.split('»'):
+            if ele not in ('', ' ', '\n', '\t'):
+                nl.append(ele.strip())
+        pp.category = nl[-2:-1][0]
+        nl = '/'.join(nl)
+        pp.attributes = {'product_path': nl}
+        pp.composition = None
+        pp.color = None
+        pp.size = None
+        # log.info('Soup \n%r',soup)
+        img = []
+        raw_img = soup.find('div', {'id': 'ZdjeciaProduktu'})
+        for tmp_img in raw_img.findAll('a'):
+            log.info('Raw img %r', tmp_img.get('href'))
+            
+            temp = tmp_img.find('img')
+            img.append({
+                'big': tmp_img.get('href'),
+                'thumbs': ''.join([self.response_object.protocol, '://', self.response_object.domain, '/', temp.get('src')])
+            })
+        pp.images = img
+        return pp
 
 
 class SklepkostarPl():

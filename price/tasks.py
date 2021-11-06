@@ -41,3 +41,9 @@ def c_tags_product(ofert_id=None, shop_id=None, entry_point_id=None, date_scan=N
 def tag_paraser(d_ofert):
     tp = TagsProduct()
     tp.tag_parser(None, d_ofert)
+
+
+# @celery_app.task
+# def proces_not_parased_page(self):
+#     ps = PpServices() 
+#     ps.process_new_product_pages()

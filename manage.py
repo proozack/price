@@ -244,21 +244,25 @@ def parase_product_pages(shop_id):
     s.parase_product_pages(shop_id)
 
 @manager.command
-def run_parasing_pages(shop_id=None, url_str=None, limit=None):
+def run_parasing_pages(shop_id=None, url_str=None, entry_point_id=None, limit=None, interval=None):
     """
     Run parasing product page for shop_id, Run as task celery
     """
+    import time
     from price.tasks import product_page_parase
     ipp = ImpPriceServices()
     if limit is not None:
         limit = int(limit) - 1
     oi = 0
-    for oi, result in enumerate(ipp.get_pages(shop_id, url_str)):
+    for oi, result in enumerate(ipp.get_pages(shop_id, url_str, entry_point_id)):
         if limit is not None and oi > limit:
             log.info('I stop working because a limit has been set: {}'.format(limit + 1))
             break
         log.info('I order url processing: {}'.format(result.url))
         product_page_parase.delay(result)
+        if interval:
+            log.info('Wait ... {} s.'.format(interval))
+            time.sleep(int(interval))
     log.info('I oreder {} tasks'.format(oi))
 
 
@@ -277,6 +281,18 @@ def c_tags_product(ofert_id=None, shop_id=None, entry_point_id=None, date_scan=N
     from price.tasks import c_tags_product
     scan_date = date_scan
     c_tags_product.delay(ofert_id, shop_id, entry_point_id, date_scan)
+
+
+@manager.command
+def proces_not_parased_page():
+    # icpdbu = ImpCatalogPageDbU()
+    ipp = ImpPriceServices()
+    for entry_point_id in ipp.get_processed_entry_points():
+        log.info('Processing entry point ID: %r', entry_point_id)
+        run_parasing_pages(None, None, entry_point_id)
+        # break
+    # from price.tasks import proces_not_parased_page
+    # proces_not_parased_page.delay()
 
 if __name__ == "__main__":
     manager.run()
