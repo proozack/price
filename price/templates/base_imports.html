@@ -44,15 +44,17 @@
         </div>
         <div class="top-nav s-12 l-10">
             <ul class="right chevron">
-                <li><a>Clothes</a>
+                <li><a>Ubrania - Old</a>
                   <ul> 
                     {%  block menu %}
                     {% endblock %}
                   </ul>
                 </li>
-                <li><a href="{{ resource['real_url'] }}shops">Shops stats</a></li>
-                <li><a href="{{ resource['real_url'] }}imports">Imports</a></li>
-                <li><a href="{{ resource['real_url'] }}tags">Tags</a></li>
+                    {%  block shemenu %}
+                    {% endblock %}
+                <li><a href="{{ resource['real_url'] }}shops">Statystyki</a></li>
+               <!--  <li><a href="{{ resource['real_url'] }}imports">Imports</a></li>
+               <li><a href="{{ resource['real_url'] }}tags">Tags</a></li>-->
             </ul>
         </div>
       </nav>

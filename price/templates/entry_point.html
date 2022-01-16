@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 
 {% from 'm_pagination.html' import pages %}
+{% from 'm_menu.html' import dyn_menu %}
 
 {% block title %}
     {{ resource['description'] }}
@@ -20,6 +21,9 @@
     <li><a href="{{ resource['real_url'] }}category/{{ entity.representation }}/1">{{ entity.name }}</a></li>
     {% endfor %}
 {% endblock %}
+{% block shemenu %}
+    {{ dyn_menu(resource, new_menu) }}
+{% endblock %}
 
 {% block content %}
 <section class="section">
@@ -27,7 +31,7 @@
     <div> 
         <h1 style="font-family: Playfair Display;"> {{ resource['description'] }} </h1>
         <p>
-            <b>Found {{entities|list|length}} from  {{ resource['count'] }} records</b>
+            <b>Znaleziono {{entities|list|length}} z  {{ resource['count'] }} rekordów</b>
         </p>
 
         {% if entities|list|length %}

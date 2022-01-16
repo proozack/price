@@ -1,0 +1,20 @@
+{% macro dyn_menu(resource, new_menu) -%}
+    {% set ns = namespace(group_category = '') -%}
+    {% set ns = namespace(counter = 0) -%}
+    <li>
+    {% for entity in new_menu -%}
+        {% if ns.group_category != entity.group_category_name -%}
+        {% if ns.counter != 0 -%}
+        </ul>
+        </li>
+        {% endif %}
+        <li><a>{{ entity.group_category_name }}</a>
+        <ul>
+        {% endif -%}
+        {% set ns.group_category = entity.group_category_name -%}
+                <li><a href="{{ resource['real_url'] }}list_product/{{ entity.meta_category_name }}/1">{{ entity.meta_category_name }}</a></li>
+        {% set ns.counter=ns.counter+1 -%}        
+    {% endfor -%}
+        </ul>
+    </li>
+{%- endmacro %}

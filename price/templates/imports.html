@@ -1,4 +1,5 @@
 {% extends "base_imports.html" %}
+{% from 'm_menu.html' import dyn_menu %}
 
 {% block title %}
     {{ resource['description'] }}
@@ -17,6 +18,10 @@
     {% for entity in menu -%}
     <li><a href="{{ resource['real_url'] }}category/{{ entity.representation }}/1">{{ entity.name }}</a></li>
     {% endfor %}
+{% endblock %}
+
+{% block shemenu %}
+    {{ dyn_menu(resource, new_menu) }}
 {% endblock %}
 
 {% block content %}

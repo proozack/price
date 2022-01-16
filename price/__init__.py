@@ -1,9 +1,9 @@
 import simplejson
 # from flask import Flask
 from flask_login import LoginManager
-from flask import Flask, g, jsonify, request
+from flask import Flask, g, jsonify, request # noqa F401
 
-from flask_session import Session
+from flask_session import Session # noqa F401
 from flask_migrate import Migrate
 # from flask_sqlalchemy import SQLAlchemy
 # from flask_restful import Api
@@ -11,13 +11,12 @@ from flask_migrate import Migrate
 # from flask_cors import CORS
 from flask import make_response
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine # noqa  F401
+from sqlalchemy.orm import sessionmaker # noqa F401
 
 from price.extension import (api, celery_app, db)
 # from conf.localconfig import Config
-from price import all_tasks
-
+from price import all_tasks # noqa F401
 
 
 import logging
@@ -26,9 +25,10 @@ log = logging.getLogger(__name__)
 basestring = str
 login_managerte_app = LoginManager()
 # jeśli będzie vue.js to poniżej
-#api = Api(prefix='/api_v1', catch_all_404s=True, errors=restful_error_messages.errors)
+# api = Api(prefix='/api_v1', catch_all_404s=True, errors=restful_error_messages.errors)
 # Wypadku templetingu poniżej
 # api = Api(catch_all_404s=True, errors=restful_error_messages.errors)
+
 
 def create_app(config=None):
     """Construct the core application."""
@@ -36,14 +36,13 @@ def create_app(config=None):
     app = Flask(__name__, instance_relative_config=True)
 
     if isinstance(config, basestring):
-        config = import_string(config)()
+        config = import_string(config)() # noqa F821
 
     # app = Flask('price', instance_relative_config=True)
 
     # db = SQLAlchemy()
     # SESSION_TYPE = 'redis'
     # session = Session(app)
-    
     app.config.from_object(config)
     app.config["SQLALCHEMY_ECHO"] = False
     db.init_app(app)
@@ -55,16 +54,15 @@ def create_app(config=None):
     ]
     cors = CORS(
         app,
-        origins='*', 
-        supports_credentials=True, 
+        origins='*',
+        supports_credentials=True,
         expose_headers=cors_expose_headers
     )
     """
     # SqlAlchemy Session
-    #sqlalchemy_engine = create_engine(getattr(Config, 'SQLALCHEMY_DATABASE_URI'))
-    #Session = sessionmaker(bind=sqlalchemy_engine)
-    #session = Session()
-
+    # sqlalchemy_engine = create_engine(getattr(Config, 'SQLALCHEMY_DATABASE_URI'))
+    # Session = sessionmaker(bind=sqlalchemy_engine)
+    # session = Session()
 
     with app.app_context():
         #  app = Flask('price', instance_relative_config=True)
@@ -72,7 +70,7 @@ def create_app(config=None):
         api.app = app
         # ma = Marshmallow(app)
 
-        from price import routes 
+        from price import routes # noqa F401
 
         from .celery_base_task import mk_base_task
         celery_app.config_from_object(app.config['CELERY'])
@@ -89,8 +87,10 @@ def create_app(config=None):
         #
         # celery_app.init_app(app)
         db.create_all()
+        # log.info('Db: \n\n\n%r', dir(db.metadata.tables.items()))
         api.init_app(app)
-        migrate = Migrate(app, db)
+        migrate = Migrate(app, db) # noqa %841
+        app.config["SQLALCHEMY_ECHO"] = False
         return app
 
 

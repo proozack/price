@@ -1,5 +1,5 @@
-from sqlalchemy import and_, case
-from sqlalchemy import cast, Date
+from sqlalchemy import and_
+from sqlalchemy import Date
 from sqlalchemy.sql.expression import func
 from sqlalchemy import desc, asc
 from sqlalchemy.orm import aliased
@@ -63,7 +63,7 @@ class ProductVersionDbUtils():
                 TagWordLink.active == True, # noqa E712
                 TagWordLink.deleted == False
             ),
-            isouter = True
+            isouter=True
         ).filter(
             and_(
                 Product.name == name,
@@ -76,6 +76,7 @@ class ProductVersionDbUtils():
         ).first()
         return result
 
+
 class EntryPointsDbUtils():
     def get_list_all_entry_points(self, enty_point_id=None):
         ep = EntryPoint
@@ -84,7 +85,7 @@ class EntryPointsDbUtils():
                 ep.id,
                 ep.url,
                 Category.id
-            ).join (
+            ).join(
                 Category,
                 Category.id == ep.category_id
             ).filter(
@@ -116,6 +117,17 @@ class EntryPointsDbUtils():
         ]
         """
 
+    def get_entry_point(self, id):
+        return db.session.query(
+            EntryPoint.id,
+            EntryPoint.shop_id
+        ).filter(
+            and_(
+                EntryPoint.id == id,
+                EntryPoint.active.is_(True)
+            )
+        ).first()
+
     def is_entry_point_exists(self, url):
         return db.session.query(
             EntryPoint.id
@@ -140,7 +152,6 @@ class EntryPointsDbUtils():
         for entry_point in list_entry_point:
             self.add_enty_point_with_check_shop(entry_point, category_id)
 
-
     def get_entry_point_by_id(self, entry_point_id):
         return db.session.query(
             EntryPoint.id,
@@ -148,6 +159,7 @@ class EntryPointsDbUtils():
         ).filter(
             EntryPoint.id == entry_point_id
         ).first()
+
 
 class ShopDbUtils():
     def is_shop_exists(self, url: str):
@@ -168,6 +180,13 @@ class ShopDbUtils():
             return s.id
         else:
             return id_shop
+
+    def get_shop_name(self, shop_id):
+        return db.session.query(
+            Shop.url.label('name')
+        ).filter(
+            Shop.id == shop_id
+        ).one_or_none()
 
 
 class OfertDbUtils():
@@ -203,7 +222,6 @@ class OfertDbUtils():
         ).filter(
             EntryPoint.id == entry_point_id
         ).all()
-
 
     def get_all_brand_by_category(self, category_id: int) -> list:
         result = db.session.query(
@@ -269,7 +287,6 @@ class OfertDbUtils():
         o = o.order_by(Shop.is_brand_shop.asc(), Ofert.manufacturer.asc())
         return o.all()
 
-
     def get_all_ofert_by_creation_date(self, creation_date=date.today()) -> list:
         return db.session.query(
             Ofert.id,
@@ -292,6 +309,7 @@ class OfertDbUtils():
             (Ofert.creation_date).cast(Date)
         ).all()
 
+
 class BrandDbUtils():
     def new_brand(self, brand_name, logo=None):
         b = Brand(brand_name, logo)
@@ -301,7 +319,7 @@ class BrandDbUtils():
 
     @commit_after_execution
     def add_brand(self, brand_name, logo=None):
-        brand_id =  self.is_brand_exists(brand_name)
+        brand_id = self.is_brand_exists(brand_name)
         if brand_id:
             return brand_id
         else:
@@ -338,14 +356,14 @@ class BrandDbUtils():
             Product,
             and_(
                 Product.brand_id == Brand.id,
-                Product.active == True,
-                Product.deleted == False,
+                Product.active.is_(True),
+                Product.deleted.is_(False),
                 Product.name == product_name
             )
         ).filter(
             and_(
-                Brand.active == True,
-                Brand.deleted == False
+                Brand.active.is_(True),
+                Brand.deleted.is_(False)
             )
         ).first()
 
@@ -386,7 +404,7 @@ class ProductDbUtils():
     def save_product(self, tp_object):
         pvdbu = ProductVersionDbUtils()
         twldu = TagWordLinkDbUtils()
-        
+
         if not tp_object.product_id:
             product_id = self.add_product(tp_object)
         else:
@@ -417,7 +435,7 @@ class ProductDbUtils():
             tp_object.url,
             product_version_id,
             tp_object.shop_id
-        ) 
+        )
         irdu = ImageRepoDbUtils()
         repo_image_id = irdu.add_image_to_repo(
             tp_object.image,
@@ -435,9 +453,6 @@ class ProductDbUtils():
         )
 
         ps = ProductStatementDbUtils()
-        # ps.add_statment(
-        # )
-
 
     def add_price_to_product(self, product_id, shop_id, price, date_price):
         pp = ProductPrice(product_id, shop_id, price, date_price)
@@ -489,9 +504,9 @@ class ProductDbUtils():
             Brand,
             Brand.id == TagProductDef.brand_id
         ).filter(
-            and_ (
-                TagOfert.creation_date.cast(Date) == max_date, # func.current_date(),
-                Ofert.creation_date.cast(Date) == max_date# func.current_date()
+            and_(
+                TagOfert.creation_date.cast(Date) == max_date,  # func.current_date(),
+                Ofert.creation_date.cast(Date) == max_date  # func.current_date()
             )
         ).group_by(
             product.c.product_id,
@@ -502,7 +517,6 @@ class ProductDbUtils():
                 func.count(Ofert.id)
             )
         )
-    
 
     def get_product_by_product_def_id(self, product_def_id):
         return db.session.query(
@@ -531,11 +545,11 @@ class ProductDbUtils():
         ).join(
             Tag,
             Tag.id == TagProduct.tag_id,
-            isouter = True
+            isouter=True
         ).join(
             Brand,
             Brand.id == TagProductDef.brand_id,
-            isouter = True
+            isouter=True
         ).filter(
             and_(
                 TagOfert.tag_product_def_id == product_def_id,
@@ -566,10 +580,10 @@ class ProductDbUtils():
             TagProductDef.id == TagOfert.tag_product_def_id
         ).join(
             Brand,
-            Brand.id ==  TagProductDef.brand_id
+            Brand.id == TagProductDef.brand_id
         ).join(
             TagProduct,
-            TagProduct.tag_product_def_id == TagProductDef.id 
+            TagProduct.tag_product_def_id == TagProductDef.id
         ).join(
             Tag,
             Tag.id == TagProduct.tag_id
@@ -610,7 +624,7 @@ class ProductDbUtils():
         ofert_id = kwargs.get('ofert_id')
         create_date = kwargs.get('create_date')
 
-        result =  db.session.query(
+        result = db.session.query(
             Ofert.url,
             Ofert.title,
             Ofert.manufacturer.label('main_brand'),
@@ -648,9 +662,9 @@ class ProductDbUtils():
 
 
 class ProductStatementDbUtils():
-    def add_statment(self, ofert_arch_id, brand_id, category_id, product_id, poduct_version_id, shop_id, product_image_id, product_shop_url_id, product_price_id):
-        ps = ProductStatement(ofert_arch_id, brand_id, category_id, product_id, poduct_version_id, shop_id, product_image_id, product_shop_url_id, product_price_id)
-        db.session.add(pp)
+    def add_statment(self, ofert_arch_id, brand_id, category_id, product_id, poduct_version_id, shop_id, product_image_id, product_shop_url_id, product_price_id): # noqa E501
+        ps = ProductStatement(ofert_arch_id, brand_id, category_id, product_id, poduct_version_id, shop_id, product_image_id, product_shop_url_id, product_price_id) # noqa  E501
+        db.session.add(ps)
         db.session.flush()
 
 
@@ -677,7 +691,6 @@ class KeyWordDbUtils():
 
 
 class KeyWordLinkDbUtils():
-    
     @commit_after_execution
     def add_word_to_category(self, category_id, word):
         kwdu = KeyWordDbUtils()
@@ -741,10 +754,10 @@ class CategoryDbUtils():
             MetaCategory,
             MetaCategory.id == Category.meta_category_id
         ).filter(
-            Category.active == True,
-            Category.deleted == False,
-            MetaCategory.active == True,
-            MetaCategory.deleted == False
+            Category.active.is_(True),
+            Category.deleted.is_(False),
+            MetaCategory.active.is_(True),
+            MetaCategory.deleted.is_(False)
         ).all()
         return [
             MenuLink(
@@ -762,7 +775,6 @@ class CategoryDbUtils():
             Category.id == category_id
         ).first()
         return catgeory[0]
-
 
     def get_category_id_by_slug(self, category_slug):
         return db.session.query(
@@ -817,7 +829,7 @@ class TagWordLinkDbUtils():
 
     def bulk_tag_binding(self, product_version_id, tag_list):
         """
-        param: product_version_id (int): 
+        param: product_version_id (int):
         param: tag_list: (id_word, word)
         """
         list_added_tag = []
@@ -872,17 +884,18 @@ class ImageRepoDbUtils():
             ImageRepo.image == image
         ).first()
 
+
 class ProductImageDbUtils():
 
     def add_products_image(self, product_version_id, repo_image_id):
-            product_images_id = self.if_products_image_exists(product_version_id, repo_image_id)
-            if product_images_id:
-                return product_images_id
-            else:
-                pi = ProductImage(product_version_id, repo_image_id)
-                db.session.add(pi)
-                db.session.flush()
-                return pi.id
+        product_images_id = self.if_products_image_exists(product_version_id, repo_image_id)
+        if product_images_id:
+            return product_images_id
+        else:
+            pi = ProductImage(product_version_id, repo_image_id)
+            db.session.add(pi)
+            db.session.flush()
+            return pi.id
 
     def if_products_image_exists(self, product_version_id, repo_image_id):
         return db.session.query(
@@ -922,20 +935,19 @@ class TagDbUtils():
             )
             for tag in tags_list
         ]
-    
+
     @commit_after_execution
     def c_bulk_save_tag(self, tags_list):
         return self.bulk_save_tag(tags_list)
 
-    #def get_bulk_tags(self, tags_list):
+    # def get_bulk_tags(self, tags_list):
     def get_bulk_tags(self, strings_tags):
         """
         :param strings_tags tags delimeter by ; symbol
         """
 
-
         a = db.session.query(func.unnest(func.string_to_array(strings_tags, ';')).label('tag')).cte('a')
-        b = db.session.query(Tag.id, a.c.tag, Tag.meaning  ).join(Tag, a.c.tag == Tag.value, isouter = True).cte('b')
+        b = db.session.query(Tag.id, a.c.tag, Tag.meaning).join(Tag, a.c.tag == Tag.value, isouter=True).cte('b')
         return db.session.query(b.c.id.label('tag_id'), b.c.tag, b.c.meaning).all()
 
     def get_tag_by_counting(self):
@@ -947,7 +959,7 @@ class TagDbUtils():
         ).join(
             TagProduct,
             TagProduct.tag_id == Tag.id,
-            isouter = True
+            isouter=True
         ).group_by(
             Tag.id,
             Tag.value,
@@ -991,14 +1003,14 @@ class TagDbUtils():
         ).join(
             Category,
             Category.id == TagProductDef.category_id,
-            isouter = True
+            isouter=True
         ).filter(
             and_(
                 Tag.value == tag,
                 Ofert.creation_date.cast(Date) == func.current_date()
             )
         ).order_by(Ofert.price.asc()).cte('products')
-        
+
         subcategory = db.bindparam('str_tworzacy', '').label('subcategory')
         colortags = db.bindparam('str_tworzacy', '').label('colortags')
 
@@ -1020,11 +1032,11 @@ class TagDbUtils():
         ).join(
             TagProduct,
             TagProduct.tag_product_def_id == products.c.product_id,
-            isouter = True
+            isouter=True
         ).join(
             Tag,
             Tag.id == TagProduct.tag_id,
-            isouter = True
+            isouter=True
         ).group_by(
             products.c.product_id,
             products.c.ofert_id,
@@ -1040,7 +1052,6 @@ class TagDbUtils():
         ).order_by(
             products.c.price.asc()
         ).all()
-
 
     def refresh_tags_by_synonym(self):
         pass
@@ -1086,10 +1097,10 @@ class TagProductDbUtils():
             and_(
                 TagProductDef.category_id == category_id,
                 TagProductDef.brand_id == brand_id,
-                TagProduct.active == True,
-                TagProduct.deleted == False,
-                TagProductDef.active == True,
-                TagProductDef.deleted == False
+                TagProduct.active.is_(True),
+                TagProduct.deleted.is_(False),
+                TagProductDef.active.is_(True),
+                TagProductDef.deleted.is_(False)
             )
         )
 
@@ -1102,12 +1113,11 @@ class TagProductDbUtils():
                     tag_alias.id == TagProduct.tag_id,
                     tag_alias.value == tag
                 ),
-                isouter = True
+                isouter=True
             )
             list_tag_alias.append(tag_alias)
 
         base_query = base_query.group_by(TagProductDef.id)
-
 
         for alias in list_tag_alias:
             base_query = base_query.having(
@@ -1194,7 +1204,7 @@ class TagProductDbUtils():
             TagProduct.tag_id == Tag.id,
             isouter = True
         ).cte('prd')
-        
+
         return db.session.query(
             prd.c.prod_id
         ).filter(
@@ -1202,7 +1212,7 @@ class TagProductDbUtils():
         ).all()
         """
 
-        """ V.1 
+        """ V.1
         return db.session.query(
             TagProduct.tag_product_def_id
         ).join(
@@ -1219,7 +1229,7 @@ class TagProductDbUtils():
             )
         ).group_by(
             TagProduct.tag_product_def_id
-        ).having(          
+        ).having(
             func.min(
                 case(
                     [
@@ -1230,10 +1240,10 @@ class TagProductDbUtils():
                     ],
                     else_=0
                 )
-            ) == 1 
+            ) == 1
         ).all()
         """
-    
+
     def bind_product_def_tag(self, tag_product_def_id, tag_id):
         tp = TagProduct(tag_product_def_id, tag_id)
         db.session.add(tp)
@@ -1242,7 +1252,7 @@ class TagProductDbUtils():
 
     def bulk_binding_product_tag(self, tag_product_def_id, tuples_tag_list):
         return [
-            self.bind_product_def_tag(tag_product_def_id, tuple_tag[0]) 
+            self.bind_product_def_tag(tag_product_def_id, tuple_tag[0])
             for tuple_tag in tuples_tag_list
         ]
 
@@ -1295,10 +1305,11 @@ class TagProductDefDbUtils():
         ).filter(
             and_(
                 TagProductDef.id == product_def_id,
-                TagProductDef.active == True,
-                TagProductDef.deleted == False
+                TagProductDef.active.is_(True),
+                TagProductDef.deleted.is_(False)
             )
         ).first()
+
 
 class TagOfertDbUtils():
     def add_ofert_to_product(self, ofert_id, product_def_id):
@@ -1325,8 +1336,8 @@ class TagOfertDbUtils():
             and_(
                 TagOfert.ofert_id == ofert_id,
                 TagOfert.tag_product_def_id == product_def_id,
-                TagOfert.active == True,
-                TagOfert.deleted == False
+                TagOfert.active.is_(True),
+                TagOfert.deleted.is_(False)
             )
         ).first()
 
@@ -1354,11 +1365,10 @@ class CategorySynonymDbUtils():
             and_(
                 CategorySynonym.category_id == category_id,
                 CategorySynonym.value == value,
-                CategorySynonym.active == True,
-                CategorySynonym.deleted == False
+                CategorySynonym.active.is_(True),
+                CategorySynonym.deleted.is_(False)
             )
         ).first()
-
 
     def add_new_synonym(self, category_id, value):
         synonym_id = self.is_exists_synonym(category_id, value)
@@ -1369,11 +1379,10 @@ class CategorySynonymDbUtils():
             db.session.add(cs)
             db.session.flush()
             return cs.id
- 
+
     @commit_after_execution
     def c_add_new_synonym(self, category_id, value):
         return self.add_new_synonym(category_id, value)
-
 
     def get_category_id_by_synonym(self, value):
         return db.session.query(
@@ -1381,8 +1390,8 @@ class CategorySynonymDbUtils():
         ).filter(
             and_(
                 CategorySynonym.value == value,
-                CategorySynonym.active == True,
-                CategorySynonym.deleted == False
+                CategorySynonym.active.is_(True),
+                CategorySynonym.deleted.is_(False)
             )
         ).first()
 
@@ -1392,8 +1401,7 @@ class CategorySynonymDbUtils():
             CategorySynonym.value
         ).filter(
             and_(
-                CategorySynonym.active == True,
-                CategorySynonym.deleted == False
+                CategorySynonym.active.is_(True),
+                CategorySynonym.deleted.is_(False)
             )
         ).all()
-

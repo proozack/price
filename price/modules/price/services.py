@@ -11,9 +11,19 @@ from price.modules.price.parser.gallery import GaleryParser
 from price.modules.price.match_product import MatchProduct
 from price.modules.price.tags_product import TagsProduct
 from price.modules.price.normalize_product import NormalizeProduct
-from price.modules.price.product_support import ProductSupport 
-from price.modules.price.db_utils import KeyWordLinkDbUtils, TagWordLinkDbUtils, BrandDbUtils, CategorySynonymDbUtils, CategoryDbUtils
-from price.modules.price.db_utils import CategoryDbUtils, ProductDbUtils
+from price.modules.price.product_support import ProductSupport
+from price.modules.price.db_utils import (
+    # KeyWordLinkDbUtils,
+    TagWordLinkDbUtils,
+    BrandDbUtils,
+    CategorySynonymDbUtils,
+    CategoryDbUtils,
+    ShopDbUtils
+)
+from price.modules.price.db_utils import (
+    # CategoryDbUtils,
+    ProductDbUtils,
+)
 
 import logging
 log = logging.getLogger(__name__)
@@ -87,13 +97,13 @@ class Services():
             log.info('%r', item)
 
     def get_list_category(self):
-        cdbu = CategoryDbUtils()        
+        cdbu = CategoryDbUtils()
         result = cdbu.get_all_category()
         for item in result:
             log.info('%r', item)
 
     def parase_ofert(self, ofert_id=None, shop_id=None):
-        ps = ProductSupport() 
+        ps = ProductSupport()
         mp = MatchProduct()
         np = NormalizeProduct()
         for tp_ofert in ps.parase_all_ofert(ofert_id, shop_id):
@@ -123,22 +133,22 @@ class Services():
         """
         csdbu = CategorySynonymDbUtils()
         id = csdbu.c_add_new_synonym(category_id, word.lower().strip())
-        log.info('Add word\'s link under id {}'.format(id) )
+        log.info('Add word\'s link under id {}'.format(id))
 
     def add_tag_to_list(self, name, product_id):
         twldu = TagWordLinkDbUtils()
         id = twldu.add_tag(name.lower().strip(), int(product_id))
-        log.info('Add tag\'s link under id {}'.format(id) )
-    
+        log.info('Add tag\'s link under id {}'.format(id))
+
     def add_loose_tag(self, name):
         twldu = TagWordLinkDbUtils()
         id = twldu.add_loose_tag(name.lower().strip())
-        log.info('Add tag under id {}'.format(id) )
+        log.info('Add tag under id {}'.format(id))
 
     def add_brand(self, brand_name, logo=None):
         bdu = BrandDbUtils()
         id = bdu.add_brand(brand_name.lower().strip(), logo)
-        log.info('Add brand under id {}'.format(id) )
+        log.info('Add brand under id {}'.format(id))
 
     def send_notification(self):
         ct = CategoryDbUtils()
@@ -155,4 +165,21 @@ class Services():
         print(result)
 
         data = {'message': result}
-        r = requests.post('http://192.168.254.200:5000/send', data=data)
+        r = requests.post('http://192.168.254.200:5000/send', data=data) # noqa F841
+
+    def get_shop_id(self, entry_point_id):
+        ep = EntryPointsDbUtils()
+        result = ep.get_entry_point(entry_point_id)
+        log.debug('Result Entry Point %r ', result)
+        return {
+            'id': result.id,
+            'shop_id': result.shop_id
+        }
+
+    def get_shop_name(self, shop_id):
+        s = ShopDbUtils()
+        return s.get_shop_name(shop_id)
+
+    def get_price_menu(self):
+        ct = CategoryDbUtils()
+        return ct.get_category_for_menu()

@@ -39,6 +39,30 @@ class ImpCatalogPage(DbUtils):
 
 idx_url = Index('imp_catalog_page_url_idx', ImpCatalogPage.url)
 
+class ImpCatalogPageStatus(DbUtils):
+    __tablename__ = 'imp_catalog_page_status'
+    __seqname__ = '{}_id_seq'.format(__tablename__)
+
+    id = Column(Integer, Sequence(__seqname__), primary_key=True)
+    imp_catalog_page_id = Column(
+        Integer,
+        ForeignKey("imp_catalog_page.id"),
+        nullable=False,
+        comment='FK to imp_catalog_page.id table',
+        unique=True
+    )
+    # specific_brand_date = Column(Date, nullable=True, comment='Specific brand date')
+    # specific_category_date = Column(Date, nullable=True, comment='Tagged date')
+    specific_brand_date = Column(db.DateTime, nullable=True, comment='Specific brand date')
+    specific_category_date = Column(db.DateTime, nullable=True, comment='Tagged date')
+
+    def __init__(self, imp_catalog_page_id, tagged_date=None, specific_brand_date=None):
+        self.imp_catalog_page_id = imp_catalog_page_id
+        self.tagged_date = tagged_date
+        self.specific_brand_date = specific_brand_date
+
+    def __repr__(self):
+        return '<ImpCatalogPageStatus CatalogPage: {} Tagged Date: {} Brand Date: {}'.format(self.imp_catalog_page_id, self.tagged_date, self.specific_brand_date)
 
 class ImpProductPage(DbUtils):
     __tablename__ = 'imp_product_page'

@@ -9,30 +9,29 @@ from flask import session, request
 from flask_restful import abort, reqparse
 from flask import render_template, make_response
 from flask_login import (current_user)
-from sqlalchemy import desc, func
 from price import db
 from price.utils.pass_util import hash_password, verify_password
 from price.utils.resource import PrivateResource
 from price.modules.ims.models import User, AuthLog
 from price.utils.local_type import MenuLink
 from price.utils.url_utils import UrlUtils
-from price.modules.price.models import Shop, MetaCategory, Category, EntryPoint
-from price.modules.price.models import Ofert, Image
-from price.modules.imp_price.models import ImpCatalogPage 
-# from price.extensions import app
-# from localconfig import Config
+from price.modules.price.models import Shop, MetaCategory, Category
+from price.modules.price.models import EntryPoint as ModelEntryPoint
+from price.modules.price.models import Ofert
 from price.modules.price import db_utils
 from price.modules.price.db_utils import ProductDbUtils, TagDbUtils, EntryPointsDbUtils
 from price.utils.resource import datatable_sqla
-# from sqlalchemy.sql.expression import func
+from price.utils.rest_util import get
 
 import logging
 log = logging.getLogger(__name__)
 # MenuLink = namedtuple('MenuLink', ['name', 'representation', 'parent'])
 
+
 class Config():
     REAL_URL = 'http://py2.eu:7001/'
     STATIC_URL = 'http://py2.eu:7003/'
+
 
 menu = {
     'Woman': {
@@ -52,10 +51,11 @@ menu = {
     }
 }
 
+
 class EntryPoint(Resource):
 
     def get(self, entry_point_id, page=1):
-        now = datetime.datetime.now()
+        # now = datetime.datetime.now()
         pdbu = ProductDbUtils()
         epdbu = EntryPointsDbUtils()
         entry_point = epdbu.get_entry_point_by_id(entry_point_id)
@@ -86,7 +86,6 @@ class EntryPoint(Resource):
 
         entities = entit
 
-        ct = db_utils.CategoryDbUtils()
         entities = entit
 
         template = render_template(
@@ -105,7 +104,8 @@ class EntryPoint(Resource):
                 'max_page': int(count/32) if count % 32 == 0 else int(count/32) + 1
             },
             entities=entities,
-            menu = ct.get_category_for_menu()
+            new_menu=get('http://127.0.0.1:7001/menu'),
+            menu=get('http://127.0.0.1:7001/price_menu'),
         )
         resp = make_response(template)
         resp.mimetype = 'text/html'
@@ -115,10 +115,9 @@ class EntryPoint(Resource):
 class Imports(Resource):
     def get(Resource):
         now = datetime.datetime.now()
-        ct = db_utils.CategoryDbUtils()
         template = render_template(
             'imports.html',
-            resource = {
+            resource={
                 'title': 'Imports - reale value',
                 'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
                 'real_url': Config.REAL_URL,
@@ -134,7 +133,8 @@ class Imports(Resource):
                     'Cretaion date',
                 ]
             },
-            menu = ct.get_category_for_menu()
+            new_menu=get('http://127.0.0.1:7001/menu'),
+            menu=get('http://127.0.0.1:7001/price_menu'),
         )
         resp = make_response(template)
         resp.mimetype = 'text/html'
@@ -150,18 +150,18 @@ class DtImports(Resource):
             "draw": 1,
             "recordsTotal": ile,
             "recordsFiltered": 57,
-            "data": data        
+            "data": data
         }
+
 
 class Tag(Resource):
     def get(self, tag):
-        ct = db_utils.CategoryDbUtils()
         tdb = TagDbUtils()
         count = 0
         page = 1
         result = None
         entities = []
-        wyn = tag
+        # wyn=tag
         u = UrlUtils()
         pdu = db_utils.TagDbUtils()
         o = pdu.get_product_by_tag(tag)
@@ -176,14 +176,14 @@ class Tag(Resource):
                 'url': i.url,
                 'domain': u.get_domain(i.url),
                 'image':  i.image,
-                'max_price': i.price, # i.max_price,
-                'avg_price': None, # i.avg_price,
-                'min_price': None, # i.min_price,
-                'count_visit': None, # i.count_visit,
-                'recent_visits_data': now, # i.recent_visits_data,
+                'max_price': i.price,  # i.max_price,
+                'avg_price': None,  # i.avg_price,
+                'min_price': None,  # i.min_price,
+                'count_visit': None,  # i.count_visit,
+                'recent_visits_data': now,  # i.recent_visits_data,
                 'currency': i.currency,
                 'hash': i.control_sum,
-                'manufacturer': i.brand_name.capitalize(), # i.manufacturer
+                'manufacturer': i.brand_name.capitalize(),  # i.manufacturer
                 'tags': i.all_tags.split(';'),
                 'main_tags':  i.tags.split(';'),
                 'category':  i.category,
@@ -193,8 +193,8 @@ class Tag(Resource):
             for i in o
         ]
         means_list = [
-            { 'label': mens.meaning }
-            for mens in pdu.get_list_meaning() 
+            {'label': mens.meaning}
+            for mens in pdu.get_list_meaning()
         ]
         log.info('Resultset %r', means_list)
         template = render_template(
@@ -215,7 +215,8 @@ class Tag(Resource):
                 'tag': tag,
             },
             entities=entities,
-            menu = ct.get_category_for_menu()
+            new_menu=get('http://127.0.0.1:7001/menu'),
+            menu=get('http://127.0.0.1:7001/price_menu'),
         )
         resp = make_response(template)
         resp.mimetype = 'text/html'
@@ -223,10 +224,10 @@ class Tag(Resource):
         return resp
 
     def post(self, tag):
-        log.info('Nadaje znaczenie tagowi %r znaczenie %r', tag, request.values);
+        log.info('Nadaje znaczenie tagowi %r znaczenie %r', tag, request.values)
         data = request.values
         meaning = data.get('data')
-        log.info('Nadaje znaczenie %r', meaning);
+        log.info('Nadaje znaczenie %r', meaning)
         w = db_utils.TagDbUtils()
         w.set_meaning(tag, meaning)
         return True
@@ -236,8 +237,7 @@ class Tags(Resource):
 
     def get(self):
         now = datetime.datetime.now()
-        ct = db_utils.CategoryDbUtils()
-
+        """
         config = {
             'title': 'Tags by counting',
             'dt_header': [
@@ -245,13 +245,12 @@ class Tags(Resource):
                 'Tag name',
                 'Count'
             ],
-            'date': ct.get_category_for_menu() 
+            'date': ct.get_category_for_menu()
         }
-
-
+        """
         template = render_template(
             'dt.html',
-            resource = {
+            resource={
                 'title': 'Tags by counting',
                 'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
                 'real_url': Config.REAL_URL,
@@ -268,7 +267,8 @@ class Tags(Resource):
                     'ajax': 'dt_tags',
                 }
             },
-            menu = ct.get_category_for_menu()
+            new_menu=get('http://127.0.0.1:7001/menu'),
+            menu=get('http://127.0.0.1:7001/price_menu'),
         )
         resp = make_response(template)
         resp.mimetype = 'text/html'
@@ -282,57 +282,10 @@ class DtTags(Resource):
         # log.info('Reqparse: %r', request.args)
 
         tdu = db_utils.TagDbUtils()
-        ile = 1
+        # ile = 1
         return {
-            "data": tdu.get_tag_by_counting() 
+            "data": tdu.get_tag_by_counting()
         }
-
-
-class Start(Resource):
-    def get(self):
-        ct = db_utils.CategoryDbUtils()
-        now = datetime.datetime.now()
-        result = db.session.query(func.max(Ofert.creation_date)).first()
-        o = db.session.query(
-            Ofert.title,
-            Ofert.image,
-            Ofert.price,
-            Ofert.currency,
-            Image.control_sum,
-        ).join(Image, Image.image == Ofert.image).filter(
-            Ofert.creation_date >= result[0].date()
-        ).order_by(
-            Ofert.price.desc()
-        )
-        count = o.count()
-        wyn = o.paginate(1, 24)
-        entit = [
-            {
-                'title': getattr(i, 'title'),
-                'image':  i.image,
-                'price': i.price,
-                'currency': i.currency,
-                'hash': i.control_sum,
-            }
-            for i in wyn.items
-        ]
-
-        template = render_template(
-            'index.html',
-            resource={
-                'title': 'Price - reale value',
-                'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
-                'real_url': Config.REAL_URL,
-                'static_url': Config.STATIC_URL,
-                'description': 'Friendly prices search engine',
-                'year': now.year
-            },
-            entities=entit,
-            menu = ct.get_category_for_menu()
-        )
-        resp = make_response(template)
-        resp.mimetype = 'text/html'
-        return resp
 
 
 class Shops(Resource):
@@ -362,7 +315,7 @@ class Categorys(Resource):
 class EntyPoints(Resource):
     def post(self, url, category_id, shop_id):
         if url:
-            ep = EntryPoint(url, category_id, shop_id, 1)
+            ep = ModelEntryPoint(url, category_id, shop_id, 1)
             db.session.add(ep)
             db.session.commit()
 
@@ -422,7 +375,7 @@ class CategoryView(Resource):
             'category.html',
             resource={
                 'title': '2py.eu',
-                'description': 'Selected category: {}'.format(category),
+                'description': 'Wybrano kategorię: {}'.format(category),
                 'icon_path': ''.join([Config.STATIC_URL, 'logo.png']),
                 'real_url': Config.REAL_URL,
                 'static_url': Config.STATIC_URL,
@@ -434,7 +387,8 @@ class CategoryView(Resource):
                 'max_page': int(count/32) if count % 32 == 0 else int(count/32) + 1
             },
             entities=entities,
-            menu = ct.get_category_for_menu()
+            new_menu=get('http://127.0.0.1:7001/menu'),
+            menu=get('http://127.0.0.1:7001/price_menu'),
         )
         resp = make_response(template)
         resp.mimetype = 'text/html'
@@ -445,7 +399,6 @@ class CategoryView(Resource):
 
 class ShopsStats(Resource):
     def get(self):
-        ct = db_utils.CategoryDbUtils() 
         result = None
         entities = []
         _sql = """
@@ -518,7 +471,8 @@ class ShopsStats(Resource):
                 ]
             },
             entities=entities,
-            menu = ct.get_category_for_menu()
+            new_menu=get('http://127.0.0.1:7001/menu'),
+            menu=get('http://127.0.0.1:7001/price_menu'),
         )
         resp = make_response(template)
         resp.mimetype = 'text/html'
@@ -529,7 +483,6 @@ class ShopsStats(Resource):
 class ProductView(Resource):
     # def get(self, category, product):
     def get(self, product):
-        ct = db_utils.CategoryDbUtils()
         count = 0
         page = 1
         result = None
@@ -548,14 +501,14 @@ class ProductView(Resource):
                 'url': i.url,
                 'domain': u.get_domain(i.url),
                 'image':  i.image,
-                'max_price': i.price, # i.max_price,
-                'avg_price': None, # i.avg_price,
-                'min_price': None, # i.min_price,
-                'count_visit': None, # i.count_visit,
-                'recent_visits_data': now, # i.recent_visits_data,
+                'max_price': i.price,  # i.max_price,
+                'avg_price': None,  # i.avg_price,
+                'min_price': None,  # i.min_price,
+                'count_visit': None,  # i.count_visit,
+                'recent_visits_data': now,  # i.recent_visits_data,
                 'currency': i.currency,
                 'hash': i.control_sum,
-                'manufacturer': i.brand_name.capitalize(), # i.manufacturer
+                'manufacturer': i.brand_name.capitalize(),  # i.manufacturer
                 'tags': i.tags.split(';'),
             }
             for i in o
@@ -577,7 +530,8 @@ class ProductView(Resource):
                 'max_page': int(count/32) if count % 32 == 0 else int(count/32) + 1
             },
             entities=entities,
-            menu = ct.get_category_for_menu()
+            new_menu=get('http://127.0.0.1:7001/menu'),
+            menu=get('http://127.0.0.1:7001/price_menu'),
         )
         resp = make_response(template)
         resp.mimetype = 'text/html'
@@ -788,4 +742,3 @@ class OfertList(PrivateResource):
             for i in o
         ]
         return lista
-
