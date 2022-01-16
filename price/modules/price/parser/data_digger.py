@@ -716,7 +716,7 @@ class MagicznabieliznaPl():
         list_ent = raw_path.split('\n')
         for element in list_ent:
             if element not in ('\n', ' ', '\t', ''):
-                log.info('Element %r', element)
+                # log.info('Element %r', element)
                 nl.append(element) 
         path = '/'.join(nl)
 
@@ -781,17 +781,21 @@ class EkskluzywnaPl():
  
     def get_product_page(self, soup):
         pp = ProductPage()
-        raw_brand = soup.find('span', {'class': 'pinfo-producer__text'})
-        if raw_brand is None:
+        # log.info('Soup %r', soup)
+        raw_title = soup.find('h1', {'class': 'pinfo-name'})
+        if raw_title is None:
             log.warning('Product not exist: Product not found')
             pp.deleted = True
             pp.active = False
             return pp
-
-        raw_brand = raw_brand.text.split(':')
-        pp.brand = raw_brand[1].strip()
-        raw_title = soup.find('h1', {'class': 'pinfo-name'})
+        
         pp.title = raw_title.text.strip()
+        raw_brand = soup.find('span', {'class': 'pinfo-producer__text'})
+        if raw_brand:
+            raw_brand = raw_brand.text.split(':')
+            pp.brand = raw_brand[1].strip()
+        else:
+            pp.brand = None
         raw_path = soup.find('ul', {'class': 'breadcrumb-ajax'})
         nl = []
         for ele in raw_path.text.split('\n'):
@@ -1364,11 +1368,12 @@ class WwwAstratexPl():
 
         raw_title = soup.find('div', {'id': 'head-line'})
         pp.title = raw_title.text.strip()
-        raw_size = soup.find('div', {'class': 'size'})
         pp.size = []
-        for size in raw_size.findAll('option'):
-            if size.text not in ('wybierz'):
-                pp.size.append(size.text.strip())
+        raw_size = soup.find('div', {'class': 'size'})
+        if raw_size:
+            for size in raw_size.findAll('option'):
+                if size.text not in ('wybierz'):
+                    pp.size.append(size.text.strip())
         raw_color = soup.find('div', {'class': 'colors'})
         pp.color = []
         for color in raw_color.findAll('label'):
@@ -1376,7 +1381,10 @@ class WwwAstratexPl():
         raw_brand = soup.find('a', {'class': 'producer-link'})
         pp.brand = raw_brand.text.strip()
         raw_composition = soup.find('div', {'class': 'param-row'})
-        pp.composition = raw_composition.text.strip().replace('Materiał', '')
+        if raw_composition:
+            pp.composition = raw_composition.text.strip().replace('Materiał', '')
+        else:
+            pp.composition = None
         raw_description = soup.find('div', {'id':  'DetailLegend'})
         pp.description = raw_description.find('div').text.strip()
 
@@ -1903,6 +1911,51 @@ class EroprezentPl():
             link = raw_pagination.get('href')
             return link
         return None
+
+    def get_product_page(self, soup):
+        pp = ProductPage()
+        raw_title = soup.find('h1', {'class': 'product_title'})
+        
+        if raw_title is None:
+            log.info('Product not found ')
+            pp.deleted = True
+            pp.active = False
+            return pp
+        
+        pp.title = raw_title.text.strip()
+        raw_path = soup.find('nav', {'class': 'woocommerce-breadcrumb'})
+        nl = []
+        for ele in raw_path.text.split('/'):
+            if ele not in ('', ' ', '\n', '\t'):
+                nl.append(ele.strip())
+        pp.category = nl[-2:-1][0]
+        nl = '/'.join(nl)
+        pp.attributes = {'product_path': nl}
+        raw_brand = soup.find('table', {'class': 'woocommerce-product-attributes'})
+        tmp_brand = raw_brand.find('td', {'class': 'woocommerce-product-attributes-item__value'})
+        pp.brand = tmp_brand.text.strip()
+        raw_description = soup.find('div', {'class': 'woocommerce-Tabs-panel--description'})
+        if raw_description:
+            pp.description = raw_description.text.strip()
+        else:
+            pp.description = None
+        
+        raw_img = soup.find('div', {'class': 'woocommerce-product-gallery'})
+        img = []
+        for tmp_img in raw_img.findAll('a'):
+            temp = tmp_img.find('img')
+            img.append({
+                'big': tmp_img.get('href'),
+                'thumbs': temp.get('src')
+            })
+        pp.images = img
+        pp.color = []
+        pp.size = []
+        pp.composition = None
+
+
+
+        return pp
 
 
 class NbieliznaPl():

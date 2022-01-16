@@ -3,7 +3,7 @@
         <div class="d-flex flex-row-reverse">
             <ul class="pagination">
                 {% if resource['page'] - 1 > 0 %}
-                  <li class="page-item"><a class="page-link" href="{{ resource['page'] - 1 }}">Previous</a></li>
+                  <li class="page-item"><a class="page-link" href="{{ resource['page'] - 1 }}"><<</a></li>
                 {% endif %}
 
                 {% if resource['page'] != 1 %}
@@ -36,7 +36,7 @@
                 {% endif %}
 
                 {% if resource['page'] + 1 < resource['max_page'] %}
-                  <li class="page-item"><a class="page-link" href="{{ resource['page'] + 1 }}">Next</a></li>
+                <li class="page-item"><a class="page-link" href="{{ resource['page'] + 1 }}">>></a></li>
                 {% endif %}
             </ul>
         </div>

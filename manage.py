@@ -4,9 +4,11 @@ import logging
 from app import application
 from price import db
 from flask_script import Manager
+from price.utils.rest_util import get
 from price.modules.ims.enrich_images import EnrichImages
 from price.modules.price.services import Services as PriceServices
 from price.modules.imp_price.services import Services as ImpPriceServices
+from price.modules.product.services import Services as ProductPriceServices
 
 # app = create_app()
 
@@ -128,6 +130,7 @@ def list_category():
     s = PriceServices()
     s.get_list_category()
 
+
 @manager.command
 def enrich_image():
     """
@@ -142,7 +145,7 @@ def enrich_image():
 @manager.command
 def add_synonym_to_cat(category_id, word):
     """
-    Add synonym to category 
+    Add synonym to category
     """
     log.info('Try add  word %r to category %r', word, category_id)
     s = PriceServices()
@@ -152,7 +155,7 @@ def add_synonym_to_cat(category_id, word):
 @manager.command
 def add_tag_to_list(name, product_id):
     """
-    Add tag to product 
+    Add tag to product
     """
     log.info('Try add tag %r to product %r', name, product_id)
     s = PriceServices()
@@ -162,7 +165,7 @@ def add_tag_to_list(name, product_id):
 @manager.command
 def add_loose_tag(name):
     """
-    Add tag to list 
+    Add tag to list
     """
     log.info('Try add tag %r', name)
     s = PriceServices()
@@ -172,7 +175,7 @@ def add_loose_tag(name):
 @manager.command
 def add_brand(brand_name, logo=None):
     """
-    Add tag to list 
+    Add tag to list
     """
     log.info('Try add new brand %r', brand_name)
     s = PriceServices()
@@ -225,6 +228,7 @@ def copy_all_product_to_imp():
     s = ImpPriceServices()
     s.copu_all_produc_to_imp()
 
+
 @manager.command
 def try_download_page(url, show_log=False):
     """
@@ -235,6 +239,7 @@ def try_download_page(url, show_log=False):
         show_log = bool(show_log)
     s.try_download_page(url, show_log)
 
+
 @manager.command
 def parase_product_pages(shop_id):
     """
@@ -242,6 +247,7 @@ def parase_product_pages(shop_id):
     """
     s = ImpPriceServices()
     s.parase_product_pages(shop_id)
+
 
 @manager.command
 def run_parasing_pages(shop_id=None, url_str=None, entry_point_id=None, limit=None, interval=None):
@@ -272,27 +278,176 @@ def run_downloading_ep(entry_point_id):
     Run downloading page for entry_point_id, run as celery task
     """
     from price.tasks import download_catalog
-    ipp = ImpPriceServices()
+    ipp = ImpPriceServices() # noqa F841
     download_catalog.delay(entry_point_id)
 
 
 @manager.command
 def c_tags_product(ofert_id=None, shop_id=None, entry_point_id=None, date_scan=None):
     from price.tasks import c_tags_product
-    scan_date = date_scan
     c_tags_product.delay(ofert_id, shop_id, entry_point_id, date_scan)
 
 
 @manager.command
-def proces_not_parased_page():
-    # icpdbu = ImpCatalogPageDbU()
+def proces_not_parased_page(entry_point_id=None):
     ipp = ImpPriceServices()
-    for entry_point_id in ipp.get_processed_entry_points():
+    if entry_point_id:
         log.info('Processing entry point ID: %r', entry_point_id)
         run_parasing_pages(None, None, entry_point_id)
-        # break
-    # from price.tasks import proces_not_parased_page
-    # proces_not_parased_page.delay()
+    else:
+        for entry_point_id in ipp.get_processed_entry_points():
+            log.info('Processing entry point ID: %r', entry_point_id)
+            run_parasing_pages(None, None, entry_point_id)
+
+
+@manager.command
+def tag_brand(imp_catalog_page_id=None, creation_date=None):
+    from price.modules.imp_price.services import Services
+    from price.tasks import add_brand_assignment
+    s = Services()
+    for imp_catalog_page_id in s.get_list_pages(imp_catalog_page_id, creation_date):
+        log.info('Order tag brand {}'.format(imp_catalog_page_id))
+        tp = s.get_tagging_product(imp_catalog_page_id)
+        add_brand_assignment.delay(tp)
+
+
+@manager.command
+def tag_unprocessed(scan_date=None):
+    from price.modules.imp_price.services import Services
+    from price.tasks import add_brand_assignment, add_category_assignment
+    s = Services()
+    for imp_catalog_page_id in s.get_unprocessed_pages(scan_date):
+        log.info('Order Imp_catalog_page: {}'.format(imp_catalog_page_id))
+        tp = s.get_tagging_product(imp_catalog_page_id)
+        add_brand_assignment.delay(tp)
+        add_category_assignment.delay(tp)
+
+
+@manager.command
+def add_brnad_synonym(value):
+    from price.modules.tager.services import Services
+    s = Services()
+    s.add_brnad_synonym(value)
+
+
+@manager.command
+def add_category_synonym(value):
+    from price.modules.tager.services import Services
+    from price.modules.imp_price.services import Services as ImpServices
+    from price.tasks import add_category_assignment
+    s = Services()
+    imps = ImpServices()
+    s.add_category_synonym(value)
+    list_imp_catalog_page_id = get('http://127.0.0.1:7001/catalog_page_search/category/{}'.format(value))
+    for imp_catalog_page_id in list_imp_catalog_page_id:
+        tp = imps.get_tagging_product(imp_catalog_page_id)
+        if tp:
+            log.info('Order category_assignment ImpID: {} Title: {}'.format(
+                imp_catalog_page_id,
+                tp.get('catalog_title')
+            ))
+            add_category_assignment.delay(tp)
+    for imp_catalog_page_id in list_imp_catalog_page_id:
+        tp = imps.get_tagging_product(imp_catalog_page_id)
+        if tp:
+            log.info('Order tagging_product ImpID: {} Title: {}'.format(imp_catalog_page_id, tp.get('catalog_title')))
+            tagging_product(imp_catalog_page_id, tp.get('catalog_title'))
+
+
+@manager.command
+def tag_category(imp_catalog_page_id=None, creation_date=None):
+    from price.modules.imp_price.services import Services
+    from price.tasks import add_category_assignment
+    s = Services()
+    for imp_catalog_page_id in s.get_list_pages(imp_catalog_page_id, creation_date):
+        log.info('Order tag brand {}'.format(imp_catalog_page_id))
+        tp = s.get_tagging_product(imp_catalog_page_id)
+        add_category_assignment.delay(tp)
+
+
+@manager.command
+def add_color_synonym(value):
+    from price.tasks import tagging_product
+    from price.modules.tager.services import Services
+    s = Services()
+    tag = s.add_color_synonym(value)
+    log.info('Tag %r', tag)
+    for imp_catalog_page_id, title in s.get_list_results_by_string(tag):
+        log.info('Order for tagging: {} ImpID: {}'.format(title, imp_catalog_page_id))
+        tagging_product.delay(imp_catalog_page_id, title)
+
+
+@manager.command
+def add_tag_synonym(context, value):
+    from price.tasks import tagging_product
+    from price.modules.tager.services import Services
+    s = Services()
+    tag = s.add_tag_synonym(context, value)
+    for imp_catalog_page_id, title in s.get_list_results_by_string(tag):
+        log.info('Order for tagging: {} ImpID: {}'.format(title, imp_catalog_page_id))
+        tagging_product.delay(imp_catalog_page_id, title)
+
+
+@manager.command
+def get_all_context():
+    from price.modules.tager.services import Services
+    s = Services()
+    log.info('Liist context \n%r', s.get_all_context())
+
+
+@manager.command
+def add_tag_context(context):
+    from price.modules.tager.services import Services
+    s = Services()
+    s.add_tag_context(context)
+
+
+@manager.command
+def tagging_product(imp_catalog_page_id=None, title=None):
+    from price.tasks import tagging_product
+    from price.modules.imp_price.services import Services
+    s = Services()
+    for imp_catalog_page_id, title in s.get_list_pages(imp_catalog_page_id):
+        tagging_product.delay(imp_catalog_page_id, title)
+
+
+@manager.command
+def add_product_category(name, meta_category_id=None):
+    from price.modules.product.services import Services
+    s = Services()
+    s.add_categroy(name, meta_category_id)
+
+
+@manager.command
+def copy_product():
+    no = 0
+    from price.tasks import copy_product
+    ips = ImpPriceServices()
+    for result in ips.get_all_price_for_catalog_page():
+        # log.debug('Result %r', dir(result))
+        copy_product.delay(result[0], result[1])
+        if no % 1000 == 0:
+            log.debug('Order {} task to copy product'.format(no))
+        no = no+1
+
+
+@manager.command
+def add_product(imp_catalog_page_id, scan_date):
+    ps = ProductPriceServices()
+    ps.add_product(imp_catalog_page_id, scan_date)
+
+
+@manager.command
+def upadte_category():
+    from price import db
+    from price.modules.tager.models import TagerCategory
+    from price.modules.product.db_utils import ProductCategoryDefDbu
+
+    result = db.session.query(TagerCategory.name).filter(TagerCategory.active.is_(True)).all()
+    pcd = ProductCategoryDefDbu()
+    for cat in result:
+        pcd.add_category(cat, 1)
+
 
 if __name__ == "__main__":
     manager.run()

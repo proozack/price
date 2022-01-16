@@ -16,3 +16,14 @@ class TagerTest(Resource):
             'answert': 'HelloWorld',
             'data': result
         }
+
+
+class TagerResult(Resource):
+    def get(self, imp_catalog_page_id):
+        s = Services()
+        product = s.get_product_by_id(imp_catalog_page_id)
+        category = s.get_category_by_id(imp_catalog_page_id)
+        return {
+            'product': product,
+            'category': category
+        }

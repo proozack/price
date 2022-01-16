@@ -1,14 +1,12 @@
 from price import api
 # from .main_page import (HelloWorld, Users, UserEP, LogOut,
 # SignIn, SignUp, Status, Auth, UiRouterNavigation, OfertList)
-from .main_page import Start
 from .main_page import (CategoryView, ProductView, ShopsStats, Imports, DtImports, Tags, DtTags, Tag, EntryPoint)
 
 import logging
 log = logging.getLogger(__name__)
 
 
-api.add_resource(Start, '/')
 api.add_resource(CategoryView, '/category/<string:category>/<int:page>')
 api.add_resource(ProductView, '/product/<int:product>')
 api.add_resource(ShopsStats, '/shops')

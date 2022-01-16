@@ -6,7 +6,7 @@ from flask import request, g
 import dateutil.parser
 from dateutil.tz import tzlocal
 from marshmallow import validate, ValidationError, fields, validates_schema
-from ..extensions import ma
+from price.extension import ma
 
 import logging
 log = logging.getLogger(__name__)
