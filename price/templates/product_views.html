@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from 'm_menu.html' import dyn_menu %}
+
+{% block title %}
+    {{ resource['description'] }}
+{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ resource['static_url'] }}css/templatemo-style.css">
+    <link rel="stylesheet" href="{{ resource['static_url'] }}css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ resource['static_url'] }}css/template_category.css">
+    <meta name="viewport" content="user-scalable=no, width=device-width, initial-scale=1, maximum-scale=1">          
+     <!-- jQuery -->
+     <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js" type="text/javascript"></script>
+     <link  href="https://cdn.jsdelivr.net/npm/nanogallery2@3/dist/css/nanogallery2.min.css" rel="stylesheet" type="text/css">
+     <script  type="text/javascript" src="https://cdn.jsdelivr.net/npm/nanogallery2@3/dist/jquery.nanogallery2.min.js"></script>
+    {{ super() }}
+{% endblock %}
+
+{% block menu %}
+    {% for entity in menu -%}
+    <li><a href="{{ resource['real_url'] }}category/{{ entity.representation }}/1">{{ entity.name }}</a></li>
+    {% endfor %}
+{% endblock %}
+
+{% block shemenu %}
+    {{ dyn_menu(resource, new_menu) }}
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div class="container">
+        <div class="row">
+            <h1 style="font-family: Playfair Display;"><b>{{ resource['product_brand']|capitalize }} - {{ resource['product_title']|capitalize }}</b></h1>
+        </div>
+        <div class="row">
+            <div class="col" style="font-family: Playfair Display;">
+                {{ entities['product_dsc'][0] }}
+            </div>
+            <div class="col">
+                <div data-nanogallery2 = '{
+                    <!-- ### gallery settings ### -->
+                    "thumbnailHeight":  150,
+                    "thumbnailWidth":   150,
+                    "galleryDisplayTransition":         "slideUp"
+                    "galleryDisplayTransitionDuration":  500  
+                  }'> 
+                {% for img in entities['product_img'] -%}
+                    <a href="{{ img.path_big }}" data-ngThumb="{{ img.path_thumbs }}" ></a>
+                {% endfor %}
+                </div>
+            </div>
+    </div>
+        <h3 style="font-family: Playfair Display;"> Produkt dostępny w sklepach:</h3>
+    {% for entity in entities['result_list'] -%}
+        <a href="{{ entity.product_url}}" target="_blank"/>
+            <div class="row" style="border: 1px dashed grey; margin-bottom: 5px; background-color: #F8F8F8;">
+                <div class="col">
+                    <img src="{{ entity.path_thumbs }}" style="height: 100px;" />
+                </div>
+                <div class="col">
+                    <br />{{ entity.product_title }}
+                </div>
+                <div class="col">
+                    <b>Sklep:</b><br />{{ entity.shop_name }}
+                </div>
+                <div class="col">
+                    <b> Cena: </b><br /><span class="badge badge-warning" style="font-size: 40px;">{{ entity.price }} {{ entity.currency }}</span>
+                </div>
+            </div>
+        </a>
+    {% endfor %}
+    </div>
+</section>
+{% endblock %}

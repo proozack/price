@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+
+{% from 'm_pagination.html' import pages %}
+{% from 'm_menu.html' import dyn_menu %}
+
+{% block title %}
+    {{ resource['description'] }}
+{% endblock %}
+
+{% block head %}
+    <link rel="stylesheet" href="{{ resource['static_url'] }}css/templatemo-style.css">
+    <link rel="stylesheet" href="{{ resource['static_url'] }}css/bootstrap.min.css">
+    <link rel="stylesheet" href="{{ resource['static_url'] }}css/template_category.css">
+    {{ super() }}
+{% endblock %}
+
+{% block menu %}
+    {% for entity in menu -%}
+    <li><a href="{{ resource['real_url'] }}category/{{ entity.representation }}/1">{{ entity.name }}</a></li>
+    {% endfor %}
+{% endblock %}
+
+{% block shemenu %}
+    {{ dyn_menu(resource, new_menu) }}
+{% endblock %}
+
+{% block content %}
+<section class="section">
+    <div>
+        <h1 style="font-family: Playfair Display;">Kategoria produktów: <i>{{ resource.category }}</i></h1>
+    </div>
+    <div> 
+        <h1 style="font-family: Playfair Display;"> {{ resource['description'] }} </h1>
+        <p>
+            <b>Znaleziono {{entities|list|length}} z  {{ resource['count'] }} rekordów</b>
+        </p>
+
+        {% if entities|list|length %}
+            {{ pages(resource) }}        
+    </div>
+
+    <div class="container">
+            <div class="row">
+                {% for entity in entities -%}
+                {% if (loop.index-1) %4== 0 %}
+            </div>
+            <div class="row">
+                {% endif %}
+                    
+                <div class="col-md-3 col-sm-6">
+                    <div class="product-grid">
+                        <div class="product-image">
+                            <a href="{{ resource['real_url'] }}product_views/{{ entity.brand  }}/{{ entity.name}}" />
+                                    <img src="{{ entity.path_thumbs }}" style="height: 400px;" />
+                            </a>
+                        </div>
+                        <div class="product-discount-label">
+                            {{entity.count_product}}
+                        </div>
+                        <!--<div class="social" style="background-color: #FFFFFF; border: 1px solid red;">
+                            Product ID: {{ entity.product_id }}
+                        </div>-->
+                        <div class="product-content">
+                            <h3 class="title"><a href="#"><b>{{ entity.brand }}</b> - <i>{{ entity.name }}</i></a></h3>
+                            <div class="price">
+                            {% if entity.min_price == entity.max_price %}
+                                {{entity.min_price}} {{entity.currency}} 
+                            {% else %}
+                                {{entity.min_price}} {{entity.currency}} - {{entity.max_price}} {{entity.currency}} 
+                            {% endif %}
+                            </div>
+                        </div>
+                    </div>
+            
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+            {{ pages(resource) }}        
+
+        {% else %}
+            <h1>No result fmeound</h1>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
