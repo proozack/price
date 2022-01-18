@@ -1,4 +1,4 @@
-mport logging
+import logging
 from flask import g
 
 
