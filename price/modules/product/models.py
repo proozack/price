@@ -90,6 +90,18 @@ class ProductImg(DbUtils):
         )
 
 
+product_img_name_idx = Index(
+    'product_img_orginal_images_ididx',
+    ProductImg.orginal_images_id
+)
+
+
+product_img_img_source_idx = Index(
+    'product_img_img_source_idx',
+    ProductImg.img_source
+)
+
+
 class ProductShop(DbUtils):
     __tablename__ = 'product_shop'
     __seqname__ = '{}_id_seq'.format(__tablename__)
@@ -127,6 +139,17 @@ class ProductShop(DbUtils):
             self.product_url,
             self.imp_catalog_page_id
         )
+
+
+product_shop_shop_id_idx = Index(
+    'product_shop_shop_id_idx',
+    ProductShop.shop_id
+)
+
+product_shop_imp_catalog_page_id_idx = Index(
+    'product_shop_imp_catalog_page_id_idx',
+    ProductShop.imp_catalog_page_id
+)
 
 
 class ProductShopPrice(DbUtils):
@@ -167,6 +190,12 @@ class ProductShopPrice(DbUtils):
         )
 
 
+product_shop_price_scan_date_idx = Index(
+    'product_shop_price_scan_date_idx',
+    ProductShopPrice.scan_date
+)
+
+
 class ProductCategoryDef(DbUtils):
     __tablename__ = 'product_category_definition'
     __seqname__ = '{}_id_seq'.format(__tablename__)
@@ -186,6 +215,12 @@ class ProductCategoryDef(DbUtils):
 
     def __rapr__(self):
         return '<ProductCategoryDef name: {} meta_category_id: {}>'.format(self.name, self.meta_category_id)
+
+
+product_category_definition_meta_category_id_idx = Index(
+    'product_category_definition_meta_category_id_idx',
+    ProductCategoryDef.meta_category_id
+)
 
 
 class ProductCategory(DbUtils):
