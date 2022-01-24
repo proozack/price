@@ -102,6 +102,18 @@ class ProductCatalogImg(Resource):
         }
 
 
+class ProductCategory(Resource):
+    def get(self, product_shop_id):
+        s = Services()
+        return s.get_category_for_view_by_product_shop_id(product_shop_id)
+
+
+class ProductCategoryAlt(Resource):
+    def get(self, imp_catalog_page_id):
+        s = Services()
+        return s.get_category_for_view_by_imp_catalog_page_id(imp_catalog_page_id)
+
+
 class Start(Resource):
     def get(self):
         s = Services()

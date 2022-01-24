@@ -53,22 +53,33 @@
     </div>
         <h3 style="font-family: Playfair Display;"> Produkt dostępny w sklepach:</h3>
     {% for entity in entities['result_list'] -%}
-        <a href="{{ entity.product_url}}" target="_blank"/>
-            <div class="row" style="border: 1px dashed grey; margin-bottom: 5px; background-color: #F8F8F8;">
+        <div class="row" style="border: 1px dashed grey; margin-bottom: 5px; background-color: #F8F8F8;">
                 <div class="col">
-                    <img src="{{ entity.path_thumbs }}" style="height: 100px;" />
+                    <a href="{{ entity.product_url}}" target="_blank"/>
+                        <img src="{{ entity.path_thumbs }}" style="height: 100px;" />
+                    </a>
                 </div>
-                <div class="col">
+                <div class="col" title="{{ entity.id }} {{  entity.imp_catalog_page_id }} {{ entity.product_shop_id }}">
                     <br />{{ entity.product_title }}
                 </div>
                 <div class="col">
                     <b>Sklep:</b><br />{{ entity.shop_name }}
                 </div>
                 <div class="col">
-                    <b> Cena: </b><br /><span class="badge badge-warning" style="font-size: 40px;">{{ entity.price }} {{ entity.currency }}</span>
+                    <a href="{{ entity.product_url}}" target="_blank"/>
+                        <br /><span class="badge badge-warning" style="font-size: 40px;">{{ entity.price }} {{ entity.currency }}</span>
+                    </a>
                 </div>
+            <div  class="col">
+                {%for category in entity.category %}
+                    {% if category.active %}
+                        <span class="badge badge-primary">{{ category.category_name }}</span>
+                    {% else %}
+                        <span class="badge badge-danger">{{ category.category_name }}</span>
+                    {% endif %}
+                {% endfor %}
             </div>
-        </a>
+        </div>
     {% endfor %}
     </div>
 </section>
