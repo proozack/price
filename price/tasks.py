@@ -50,7 +50,11 @@ def tag_paraser(d_ofert):
 @celery_app.task
 def add_brand_assignment(dict_tagging_product):
     ts = TagerServices()
-    ts.add_brand_assignment(dict_tagging_product)
+    assignment_brand = ts.add_brand_assignment(dict_tagging_product)
+    if assignment_brand:
+        ts.save_assignment_brand(assignment_brand)
+    else:
+        log.warning('Can\'t tagging brand %r', dict_tagging_product.get('imp_catalog_page_id'))
 
 
 @celery_app.task

@@ -404,7 +404,7 @@ class ProductShopPriceDbu():
             and_(
                 ProductShopPrice.product_shop_id == product_shop_id,
                 ProductShopPrice.scan_date == scan_date,
-                ProductShop.active.is_(True)
+                ProductShopPrice.active.is_(True)
             )
         ).one_or_none()
 
@@ -493,7 +493,8 @@ class CatalogPage():
         return self._get_list_product_bq().filter(
             and_(
                 ProductCategoryDef.meta_category_id == meta_category_id,
-                ProductShopPrice.scan_date == scan_date
+                ProductShopPrice.scan_date == scan_date,
+                ProductCategory.active.is_(True)
             )
         )
 
@@ -519,6 +520,7 @@ class CatalogPage():
             ProductDefinition.brand,
             ProductShop.product_url,
             ProductShop.imp_catalog_page_id,
+            ProductShop.id.label('product_shop_id'),
             ProductShop.shop_id,
             ProductShopPrice.price,
             ProductShopPrice.currency,
@@ -550,10 +552,37 @@ class CatalogPage():
             ProductDefinition.brand,
             ProductShop.product_url,
             ProductShop.imp_catalog_page_id,
+            ProductShop.id,
             ProductShop.shop_id,
             ProductShopPrice.price,
             ProductShopPrice.currency,
             ProductImg.path_thumbs
         ).order_by(
             ProductShopPrice.price.asc()
+        ).all()
+
+    def _get_product_category(self):
+        return db.session.query(
+            ProductShop.id.label('product_shop_id'),
+            ProductShop.product_definition_id,
+            ProductShop.imp_catalog_page_id,
+            ProductCategory.product_category_id,
+            ProductCategory.active,
+            ProductCategoryDef.name.label('category_name')
+        ).join(
+            ProductCategory,
+            ProductCategory.product_definition_id == ProductShop.product_definition_id
+        ).join(
+            ProductCategoryDef,
+            ProductCategoryDef.id == ProductCategory.product_category_id
+        )
+
+    def get_product_category_by_product_shop_id(self, product_shop_id):
+        return self._get_product_category().filter(
+            ProductShop.id == product_shop_id
+        ).all()
+
+    def get_product_category_by_imp_catalog_page_id(self, imp_catalog_page_id):
+        return self._get_product_category().filter(
+            ProductShop.imp_catalog_page_id == imp_catalog_page_id
         ).all()

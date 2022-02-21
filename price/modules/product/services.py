@@ -107,6 +107,14 @@ class Services():
         cp = CatalogPage()
         return cp.get_image_for_catalog(name, brand)
 
+    def get_category_for_view_by_product_shop_id(self, product_shop_id):
+        cp = CatalogPage()
+        return cp.get_product_category_by_product_shop_id(product_shop_id)
+
+    def get_category_for_view_by_imp_catalog_page_id(self, imp_catalog_page_id):
+        cp = CatalogPage()
+        return cp.get_product_category_by_imp_catalog_page_id(imp_catalog_page_id)
+
     def get_product_for_view(self, brand, name, scan_date):
         cp = CatalogPage()
         pi = ProductImgDbu()
@@ -122,18 +130,22 @@ class Services():
             else:
                 product_dsc.append(product_info.get('description'))
 
+            product_category = get('http://127.0.0.1:7001/product_category/{}'.format(ent.product_shop_id))
+
             line = {
                 'id': ent.id,
                 'name': ent.name,
                 'brand': ent.brand,
                 'product_url': ent.product_url,
                 'shop_id': ent.shop_id,
+                'product_shop_id': ent.product_shop_id,
                 'imp_catalog_page_id': ent.imp_catalog_page_id,
                 'shop_name': get('http://127.0.0.1:7001/shop/{}'.format(ent.shop_id)).get('name'),
                 'product_title': product_info.get('title'), # noqa E501
                 'price': ent.price,
                 'currency': ent.currency,
                 'path_thumbs': ent.path_thumbs,
+                'category': product_category,
             }
             catalog_page_id_lst.append(ent.imp_catalog_page_id)
             result_list.append(line)

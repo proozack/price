@@ -234,8 +234,13 @@ class ImpCatalogPageDbU():
             ImpCatalogPage.active.is_(True)
         )
 
-    def get_all_price_for_catalog_page(self):
-        return self._get_catalog_page_id().all()
+    def get_all_price_for_catalog_page(self, scan_date=None):
+        if scan_date:
+            return self._get_catalog_page_id().filter(
+                ImpProductPrice.scan_date == scan_date
+            ).all()
+        else:
+            return self._get_catalog_page_id().all()
 
 
 class ImpProductPageDbU():

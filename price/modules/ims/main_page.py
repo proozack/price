@@ -196,7 +196,7 @@ class Tag(Resource):
             {'label': mens.meaning}
             for mens in pdu.get_list_meaning()
         ]
-        log.info('Resultset %r', means_list)
+        # log.info('Resultset %r', means_list)
         template = render_template(
             'tag.html',
             resource={
@@ -392,8 +392,6 @@ class CategoryView(Resource):
         )
         resp = make_response(template)
         resp.mimetype = 'text/html'
-        # log.info('To jest wynik %r', menu)
-        # log.info('to są entities: %r', entities)
         return resp
 
 

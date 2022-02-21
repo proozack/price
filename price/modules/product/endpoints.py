@@ -40,8 +40,9 @@ class ProductDef(Resource):
 class ProductCatalog(Resource):
     def get(self, category, page_id):
         s = Services()
+        today = datetime.date.today()
         meta_category_id = get('http://127.0.0.1:7001/definitions_meta_category/{}'.format(category)).get('id')
-        result = s.get_list_product_by_meta_category_id(meta_category_id, '2022-01-06')
+        result = s.get_list_product_by_meta_category_id(meta_category_id, today)
         count = result.count()
         log.debug('Result %r', result)
         wyn = result.paginate(page_id, 32)
@@ -70,7 +71,8 @@ class ProductCatalog(Resource):
 class ProductViews(Resource):
     def get(self, brand, name):
         s = Services()
-        result = s.get_product_for_view(brand, name, '2022-01-06')
+        today = datetime.date.today()
+        result = s.get_product_for_view(brand, name, today)
         log.info('Result %r ', result)
         template = render_template(
             'product_views.html',
@@ -102,12 +104,25 @@ class ProductCatalogImg(Resource):
         }
 
 
+class ProductCategory(Resource):
+    def get(self, product_shop_id):
+        s = Services()
+        return s.get_category_for_view_by_product_shop_id(product_shop_id)
+
+
+class ProductCategoryAlt(Resource):
+    def get(self, imp_catalog_page_id):
+        s = Services()
+        return s.get_category_for_view_by_imp_catalog_page_id(imp_catalog_page_id)
+
+
 class Start(Resource):
     def get(self):
+        today = datetime.date.today()
         s = Services()
         meta_category_id = random.randrange(1, 20, 1)
         now = datetime.datetime.now()
-        result = s.get_list_product_by_meta_category_id(meta_category_id, '2022-01-06')
+        result = s.get_list_product_by_meta_category_id(meta_category_id, today)
         wyn = result.paginate(1, 32)
         template = render_template(
             'index.html',

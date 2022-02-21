@@ -201,7 +201,7 @@ def send_notification():
 @manager.command
 def run_processing():
     run_downloading()
-    tags_ofert()
+    # tags_ofert()
     send_notification()
 
 
@@ -210,13 +210,34 @@ def copy_product_to_imp(scan_date=None):
     """
     Copy product from price_ofert to imp_product
     """
-    log.info('Run copy product from price_ofert to imp_price')
+    log.info('copy_product_to_imp params: scan_date={}'.format(scan_date))
     s = ImpPriceServices()
     if scan_date:
         count = s.copy_product_to_imp(scan_date)
     else:
         count = s.copy_product_to_imp()
     log.info('Copy {} objects'.format(count))
+
+
+@manager.command
+def tag_import(scan_date=None):
+    """
+    Run all methods to parase imp product
+    """
+    if scan_date:
+        print('Parase product for date {}'.format(scan_date))
+        copy_product_to_imp(scan_date)
+        tag_brand(None, scan_date)
+        tagging_product(None, None, scan_date)
+        copy_product(scan_date)
+    else:
+        from datetime import date
+        today = date.today()
+        print('Parase product for date {}'.format(today))
+        copy_product_to_imp(today)
+        tag_brand(None, today)
+        tagging_product(None, None, today)
+        copy_product(today)
 
 
 @manager.command
@@ -304,11 +325,15 @@ def proces_not_parased_page(entry_point_id=None):
 def tag_brand(imp_catalog_page_id=None, creation_date=None):
     from price.modules.imp_price.services import Services
     from price.tasks import add_brand_assignment
+    log.info('tag_brand params:%r, %r)', imp_catalog_page_id, creation_date)
     s = Services()
-    for imp_catalog_page_id in s.get_list_pages(imp_catalog_page_id, creation_date):
-        log.info('Order tag brand {}'.format(imp_catalog_page_id))
+    no = 1
+    for imp_catalog_page_id, name in s.get_list_pages(imp_catalog_page_id, creation_date):
+        # log.info('Order tag brand {}'.format(imp_catalog_page_id))
         tp = s.get_tagging_product(imp_catalog_page_id)
         add_brand_assignment.delay(tp)
+        no = no+1
+    log.info('tag_brand: order {} tasks'.format(no))
 
 
 @manager.command
@@ -359,9 +384,9 @@ def tag_category(imp_catalog_page_id=None, creation_date=None):
     from price.modules.imp_price.services import Services
     from price.tasks import add_category_assignment
     s = Services()
-    for imp_catalog_page_id in s.get_list_pages(imp_catalog_page_id, creation_date):
-        log.info('Order tag brand {}'.format(imp_catalog_page_id))
-        tp = s.get_tagging_product(imp_catalog_page_id)
+    for result in s.get_list_pages(imp_catalog_page_id, creation_date):
+        log.info('Order tag category {}'.format(result))
+        tp = s.get_tagging_product(result.imp_catalog_page_id)
         add_category_assignment.delay(tp)
 
 
@@ -403,12 +428,20 @@ def add_tag_context(context):
 
 
 @manager.command
-def tagging_product(imp_catalog_page_id=None, title=None):
+def tagging_product(imp_catalog_page_id=None, title=None, creation_date=None):
     from price.tasks import tagging_product
     from price.modules.imp_price.services import Services
+    log.info('tagging_product params: imp_catalog_page_id: {}, title: {} , creation_date: {}'.format(
+        imp_catalog_page_id,
+        title,
+        creation_date)
+    )
     s = Services()
-    for imp_catalog_page_id, title in s.get_list_pages(imp_catalog_page_id):
+    no = 1
+    for imp_catalog_page_id, title in s.get_list_pages(imp_catalog_page_id, creation_date):
         tagging_product.delay(imp_catalog_page_id, title)
+        no = no+1
+    log.info('tagging_product order {} tasks'.format(no))
 
 
 @manager.command
@@ -419,11 +452,12 @@ def add_product_category(name, meta_category_id=None):
 
 
 @manager.command
-def copy_product():
+def copy_product(scan_date=None):
     no = 0
     from price.tasks import copy_product
     ips = ImpPriceServices()
-    for result in ips.get_all_price_for_catalog_page():
+    log.info('Copy product for date {}'.format(scan_date))
+    for result in ips.get_all_price_for_catalog_page(scan_date):
         # log.debug('Result %r', dir(result))
         copy_product.delay(result[0], result[1])
         if no % 1000 == 0:

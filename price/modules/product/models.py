@@ -196,6 +196,12 @@ product_shop_price_scan_date_idx = Index(
 )
 
 
+product_shop_price_product_shop_id_idx = Index(
+    'product_shop_price_product_shop_id_idx',
+    ProductShopPrice.product_shop_id
+)
+
+
 class ProductCategoryDef(DbUtils):
     __tablename__ = 'product_category_definition'
     __seqname__ = '{}_id_seq'.format(__tablename__)
