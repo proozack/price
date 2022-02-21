@@ -33,21 +33,20 @@ class Services():
         return tcdbu.c_add_context(context)
 
     def add_brand_assignment(self, dict_tagging_product):
-        tba = TagerBrandAssignmentDbu()
         tbs = TagerBrandSynonymDbu()
-        assignment_brnad = {}
+        assignment_brand = {}
         if dict_tagging_product is None:
             raise ValueError('No parameters')
         if dict_tagging_product.get('product_brand'):
             tager_brand_id = tbs.get_brand_id_by_synonym_name(dict_tagging_product.get('product_brand').lower())
-            assignment_brnad = {
+            assignment_brand = {
                 'imp_catalog_page_id': dict_tagging_product.get('imp_catalog_page_id'),
                 'brand': dict_tagging_product.get('product_brand').lower(),
                 'tager_brand_id': tager_brand_id
             }
         elif dict_tagging_product.get('catalog_brand'):
             tager_brand_id = tbs.get_brand_id_by_synonym_name(dict_tagging_product.get('catalog_brand').lower())
-            assignment_brnad = {
+            assignment_brand = {
                 'imp_catalog_page_id': dict_tagging_product.get('imp_catalog_page_id'),
                 'brand': dict_tagging_product.get('catalog_brand').lower(),
                 'tager_brand_id': tager_brand_id
@@ -55,27 +54,27 @@ class Services():
         else:
             temp = tbs.search_brnad(dict_tagging_product)
             log.info('Result tbs.search_brnad %r', temp)
-            assignment_brnad = {
+            assignment_brand = {
                 'imp_catalog_page_id': temp.imp_catalog_page_id,
                 'brand': temp.brand,
                 'tager_brand_id': temp.tager_brand_id
             }
-        log.info('Assigment brand %r', assignment_brnad)
-        if assignment_brnad:
-            result = tba.c_add_assignment(
-                assignment_brnad.get('imp_catalog_page_id'),
-                assignment_brnad.get('brand'),
-                assignment_brnad.get('tager_brand_id')
-            )
-            url = 'http://127.0.0.1:7001/catalog_page_status'
-            post(url, {
-                'imp_catalog_page_id': assignment_brnad.get('imp_catalog_page_id'),
-                'status_type': 'brand'
-                }
-            )
-        else:
-            log.warning('Can\'t tagging brand %r', dict_tagging_product.get('imp_catalog_page_id'))
-            return None
+        log.info('Assigment brand %r', assignment_brand)
+        return assignment_brand
+
+    def save_assignment_brand(self, assignment_brand):
+        tba = TagerBrandAssignmentDbu()
+        result = tba.c_add_assignment(
+            assignment_brand.get('imp_catalog_page_id'),
+            assignment_brand.get('brand'),
+            assignment_brand.get('tager_brand_id')
+        )
+        url = 'http://127.0.0.1:7001/catalog_page_status'
+        post(url, {
+            'imp_catalog_page_id': assignment_brand.get('imp_catalog_page_id'),
+            'status_type': 'brand'
+            }
+        )
         return result
 
     def add_brnad_synonym(self, value):
@@ -174,21 +173,24 @@ class Services():
         return result_dct.get('tag')
 
     def tagging_product(self, imp_catalog_page_id, title):
-        ttr = TagerTaggingResultDbu()
         tba = TagerBrandAssignmentDbu()
-        ch_title = clear_title(title)
-        ch_title = self.remove_brand(imp_catalog_page_id, ch_title)
-        ch_title = self.remove_category(imp_catalog_page_id, ch_title)
-        ch_title = self.remove_color(imp_catalog_page_id, ch_title)
-        ch_title = self.remove_tag(imp_catalog_page_id, ch_title)
         assignment_brand = tba.get_assignment(imp_catalog_page_id)
-        dct_tagging_result = {
-            'name': split_title(ch_title),
-            'imp_catalog_page_id': imp_catalog_page_id,
-            'orginal_title': title,
-            'brand': assignment_brand.brand
-        }
-        ttr.c_add_tagginig_result(dct_tagging_result)
+        if assignment_brand:
+            ttr = TagerTaggingResultDbu()
+            ch_title = clear_title(title)
+            ch_title = self.remove_brand(imp_catalog_page_id, ch_title)
+            ch_title = self.remove_category(imp_catalog_page_id, ch_title)
+            ch_title = self.remove_color(imp_catalog_page_id, ch_title)
+            ch_title = self.remove_tag(imp_catalog_page_id, ch_title)
+            dct_tagging_result = {
+                'name': split_title(ch_title),
+                'imp_catalog_page_id': imp_catalog_page_id,
+                'orginal_title': title,
+                'brand': assignment_brand.brand
+            }
+            ttr.c_add_tagginig_result(dct_tagging_result)
+        else:
+            log.warning('For imp_catalog_page_id: {} title: "{}" no found brand'.format(imp_catalog_page_id, title))
 
     def get_list_results_by_string(self, string):
         ttr = TagerTaggingResultDbu()

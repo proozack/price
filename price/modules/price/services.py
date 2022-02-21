@@ -43,7 +43,7 @@ class Services():
             except:
                 list_oferts = []
                 log.warn('Can\'t parse entry point {} [{}]'.format(id_point, url), exc_info=True)
-        self.enrich_images()
+        # self.enrich_images()
 
     def visit_sites(self, url: str) -> list:
         result_list = []

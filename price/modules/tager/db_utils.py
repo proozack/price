@@ -117,12 +117,11 @@ class TagerBrandAssignmentDbu():
             t.last_update_date = datetime.datetime.now()
             t.last_update_by = 1
             db.session.flush()
-        log.error('\n\n\n\n To tutaj się wykrzacza 1 %r', tager_brand_assignment)
         return tager_brand_assignment.id
 
     @commit_after_execution
     def c_add_assignment(self, imp_catalog_page_id, brand, tager_brand_id):
-        log.info('Dodaje wpis {} {}'.format(imp_catalog_page_id, brand))
+        log.info('Save brand {} {}'.format(imp_catalog_page_id, brand))
         return self.add_assignment(imp_catalog_page_id, brand, tager_brand_id)
 
 
@@ -176,7 +175,7 @@ class TagerBrandSynonymDbu():
 
         result = db.session.query(
             fields.c.imp_catalog_page_id,
-            TagerBrandSynonym.value,
+            TagerBrand.name.label('value'),
             func.length(TagerBrandSynonym.value).label('string_len'),
             TagerBrandSynonym.tager_brand_id
         ).join(
@@ -202,6 +201,10 @@ class TagerBrandSynonymDbu():
                     ) > 0,
                 )
             ),
+            isouter=True
+        ).join(
+            TagerBrand,
+            TagerBrand.id == TagerBrandSynonym.tager_brand_id,
             isouter=True
         ).cte('result')
 

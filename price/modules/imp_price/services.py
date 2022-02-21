@@ -23,7 +23,6 @@ class Services():
         ippdbu = ImpProductPriceDbU()
         for on, ofert in enumerate(odbu.get_all_ofert_by_creation_date(scan_date)):
             if ofert.url and ofert.entry_point_id and ofert.title is not None:
-                # log.debug("Parse product {} {}".format(on, ofert.url))
                 imp_catalog_page_id = icpdbu.c_add_catalog_page(
                     ofert.entry_point_id,
                     ofert.url, ofert.title,
@@ -139,9 +138,9 @@ class Services():
         ipp = ImpProductPageDbU()
         return ipp.get_images_by_imp_catalog_page_id(imp_catalog_page_id)
 
-    def get_all_price_for_catalog_page(self):
+    def get_all_price_for_catalog_page(self, scan_date=None):
         icp = ImpCatalogPageDbU()
-        return icp.get_all_price_for_catalog_page()
+        return icp.get_all_price_for_catalog_page(scan_date)
 
     def get_product_info(self, imp_catalog_page_id):
         ipp = ImpProductPageDbU()

@@ -404,7 +404,7 @@ class ProductShopPriceDbu():
             and_(
                 ProductShopPrice.product_shop_id == product_shop_id,
                 ProductShopPrice.scan_date == scan_date,
-                ProductShop.active.is_(True)
+                ProductShopPrice.active.is_(True)
             )
         ).one_or_none()
 
