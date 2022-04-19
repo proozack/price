@@ -102,7 +102,9 @@ def div_product_parser(_soup):
 
 
 def div_item_product(_soup):
-    for field in _soup.find_all(attrs={"class": "item"}):
+    # for field in _soup.find_all(attrs={"class": "item"}):
+    #     yield field
+    for field in _soup.find_all(attrs={"class": "product_wrapper"}):
         yield field
 
 

@@ -108,9 +108,9 @@ class Services():
             icpdbu.get_tagging_product(imp_catalog_page_id)
         )
 
-    def get_list_pages(self, imp_catalog_page_id=None, creation_date=None):
+    def get_list_pages(self, imp_catalog_page_id=None, creation_date=None, entry_point_id=None):
         icpdbu = ImpCatalogPageDbU()
-        for imp_catalog_page_id in icpdbu.get_imp_catalog_page(imp_catalog_page_id, creation_date):
+        for imp_catalog_page_id in icpdbu.get_imp_catalog_page(imp_catalog_page_id, creation_date, entry_point_id):
             yield imp_catalog_page_id
 
     def get_unprocessed_pages(self, scan_date=None):
@@ -138,10 +138,14 @@ class Services():
         ipp = ImpProductPageDbU()
         return ipp.get_images_by_imp_catalog_page_id(imp_catalog_page_id)
 
-    def get_all_price_for_catalog_page(self, scan_date=None):
+    def get_all_price_for_catalog_page(self, scan_date=None, imp_catalog_page_id=None):
         icp = ImpCatalogPageDbU()
-        return icp.get_all_price_for_catalog_page(scan_date)
+        return icp.get_all_price_for_catalog_page(scan_date, imp_catalog_page_id)
 
     def get_product_info(self, imp_catalog_page_id):
         ipp = ImpProductPageDbU()
         return ipp.get_product_info(imp_catalog_page_id)
+
+    def get_icpid_by_ep(self, entry_point_id):
+        icpdbu = ImpCatalogPageDbU()
+        return icpdbu.get_imp_catalog_page(entry_point_id=entry_point_id)

@@ -6,6 +6,7 @@ from sqlalchemy.orm import aliased
 from datetime import date
 from price import db
 from price.modules.price.models import (EntryPoint, Shop, Category, Ofert, Brand, Product, KeyWord, KeyWordLink, MetaCategory, Image, ProductPrice, TagWordLink, ProductVersion, ProductShopUrl, ImageRepo, ProductImage, OfertArch, ProductStatement, TagProduct, Tag, TagProductDef, TagOfert, CategorySynonym) # noqa E501
+from price.modules.imp_price.models import ImpCatalogPage
 from price.utils.url_utils import UrlUtils
 from price.utils.local_type import TempProduct, MenuLink
 from price.utils.db_transaction import commit_after_execution
@@ -389,7 +390,7 @@ class ProductDbUtils():
 
     # @commit_after_execution
     def add_product(self, tp: TempProduct): # noqa F811
-        bdbu = BrandDbUtils()
+        bdbu = BrandDbUtils() # noqa F841
         log.info('Tp object %r', tp.get_dict())
         product_found = self.if_product_exists(tp.title.lower(), tp.brand_id, tp.category_id)
         if not product_found:
@@ -452,7 +453,7 @@ class ProductDbUtils():
             repo_image_id
         )
 
-        ps = ProductStatementDbUtils()
+        ps = ProductStatementDbUtils() # noqa F841
 
     def add_price_to_product(self, product_id, shop_id, price, date_price):
         pp = ProductPrice(product_id, shop_id, price, date_price)
@@ -630,20 +631,28 @@ class ProductDbUtils():
             Ofert.manufacturer.label('main_brand'),
             Category.name.label('main_category'),
             Ofert.price,
-            Ofert.image
+            Ofert.image,
+            ImpCatalogPage.id.label('imp_catalog_page_id')
         ).join(
             EntryPoint,
             EntryPoint.id == Ofert.entry_point_id
         ).join(
             Category,
             Category.id == EntryPoint.category_id
+        ).join(
+            ImpCatalogPage,
+            and_(
+                ImpCatalogPage.url == Ofert.url,
+                ImpCatalogPage.active.is_(True)
+            )
         ).group_by(
              Category.name,
              Ofert.manufacturer,
              Ofert.url,
              Ofert.title,
              Ofert.price,
-             Ofert.image
+             Ofert.image,
+             ImpCatalogPage.id
         )
 
         if category_id:

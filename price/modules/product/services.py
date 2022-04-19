@@ -55,12 +55,17 @@ class Services():
     def add_product(self, imp_catalog_page_id, scan_date):
         ps = ProductShopDbu()
         product_shop = ps.get_by_imp_catalog_page_id(imp_catalog_page_id)
+        log.debug('Product shop: %r', product_shop)
         if product_shop:
             p = ProductObj(imp_catalog_page_id, scan_date)
             p.get_product_info()
             psp = ProductShopPriceDbu()
             psp.add(product_shop.id, scan_date, p.price, p.currency)
             log.debug('Save only new price for IMP.ID {}, ProductShopID: {}'.format(imp_catalog_page_id, product_shop.id)) # noqa E501
+
+            p.load_data()
+            product_def = self.save_product(p)
+            log.debug('Save new ProductDef {}'.format(product_def))
         else:
             p = ProductObj(imp_catalog_page_id, scan_date)
             p.load_data()
@@ -90,6 +95,9 @@ class Services():
             product_obj.currency
         )
         pcd = ProductCategoryDefDbu()
+        #
+        # To poniżej jest sensu
+        #
         for category in product_obj.category:
             product_category = pcd.get_category_by_name(category)
             if not product_category:

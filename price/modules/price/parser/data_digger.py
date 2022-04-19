@@ -467,7 +467,7 @@ class KontriPl():
         address = NotImplemented
         img = NotImplemented
         manufacturer = NotImplemented
-
+        # log.info('SOUP %r', soup)
         raw_img = soup.find('img', {'class': 'b-lazy'})
         tmp_img = raw_img.get('data-src')
         img = ''.join([self.response_object.protocol, '://', self.response_object.domain, tmp_img])
@@ -1005,6 +1005,73 @@ class WwwMorgantiPl():
             if result:
                 path = ''.join([self.response_object.protocol, '://', self.response_object.domain, '/', result])
                 return path
+
+    def get_product_page(self, soup):
+        pp = ProductPage()
+
+        is_active_raw = soup.find('p', {'class', 'noprod'})
+        if is_active_raw and is_active_raw.text.strip() == 'Produkt aktualnie niedostępny':
+            log.info('Product not found')
+            pp.deleted = True
+            pp.active = False
+            return pp
+
+        raw_brand = soup.find('img', {'itemprop': 'logo'})
+        if raw_brand:
+            pp.brand = raw_brand.get('alt').strip().lower()
+        else:
+            pp.brand = None
+
+        raw_title = soup.find('h1', {'itemprop': 'name'})
+        pp.title = raw_title.text.strip().lower()
+
+        raw_desc = soup.find('div', {'class': 'desc-text'})
+        if raw_desc:
+            pp.description = raw_desc.text.strip()
+        else:
+            pp.description = None
+
+        raw_size = soup.find('', {'name': 'wariant_grupa2'})
+        sizes = raw_size.findAll('option')
+        pp.size = []
+        for no, s in enumerate(sizes):
+            if no != 0:
+                pp.size.append(s.text.strip().lower())
+
+        raw_color = soup.find('', {'name': 'wariant_grupa1'})
+        colors = raw_color.findAll('option')
+        pp.color = []
+        for no, c in enumerate(colors):
+            if no != 0:
+                pp.color.append(c.text.strip().lower())
+
+        raw_cat = soup.find('div', {'id': 'breadcrumbs'})
+        path = []
+        for cat in raw_cat.findAll('li'):
+            path.append(cat.text.replace('»', '').strip().lower())
+        pp.category = path[-1]
+
+        nl = '/'.join(path)
+        pp.attributes = {'product_path': nl}
+
+        raw_img = soup.findAll('a', {'class': 'cloud-zoom-gallery'})
+        img = []
+        for tmp_img in raw_img:
+            thumbs = tmp_img.get('rel2')
+            small = thumbs.split(':')[2]
+            small = small.replace('"', '').replace("'", '').strip()
+            img.append({
+                'big': ''.join([self.response_object.protocol, '://', self.response_object.domain,'/', tmp_img.get('href')]), # noqa E501
+                'thumbs': ''.join([self.response_object.protocol, '://', self.response_object.domain, '/', small]),
+            })
+        pp.images = img
+        pp.composition = None
+
+        return pp
+
+
+class MorgantiPl(WwwMorgantiPl):
+    pass
 
 
 class DobraBieliznaPl():
@@ -1603,7 +1670,6 @@ class WwwHurtowniaOlenkaPl():
         pp.composition = None
         pp.color = None
         pp.size = None
-        # log.info('Soup \n%r',soup)
         img = []
         raw_img = soup.find('div', {'id': 'ZdjeciaProduktu'})
         for tmp_img in raw_img.findAll('a'):

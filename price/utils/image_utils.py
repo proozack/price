@@ -14,7 +14,6 @@ class ImageUtils():
         self._i = Img.open(local_path)
         self._size = len(self._i.fp.read())
         self._hash = imagehash.average_hash(self._i)
-        # self._hash = imagehash.colorhash(self._i)
         self.color_thief = ColorThief(local_path)
 
     def set_image(self, local_path):
@@ -52,7 +51,7 @@ class ImageUtils():
     def main_color(self) -> str:
         try:
             return self.color_thief.get_color(quality=1)
-        except:
+        except Exception:
             log.warn('Can\'t get color from image')
             return None
 

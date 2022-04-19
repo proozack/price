@@ -192,7 +192,7 @@ class ImpCatalogPageDbU():
             )
         ).all()
 
-    def get_imp_catalog_page(self, imp_catalog_page_id=None, creation_date=None):
+    def get_imp_catalog_page(self, imp_catalog_page_id=None, creation_date=None, entry_point_id=None):
         pages = db.session.query(
             ImpCatalogPage.id.label('imp_catalog_page_id'),
             ImpCatalogPage.title.label('title')
@@ -201,6 +201,8 @@ class ImpCatalogPageDbU():
             pages = pages.filter(ImpCatalogPage.id == imp_catalog_page_id)
         if creation_date:
             pages = pages.filter((ImpCatalogPage.creation_date).cast(Date) == creation_date)
+        if entry_point_id:
+            pages = pages.filter((ImpCatalogPage.entry_point_id == entry_point_id))
         return pages.all()
 
     def get_unprocessed_pages(self, scan_date=None):
@@ -234,10 +236,14 @@ class ImpCatalogPageDbU():
             ImpCatalogPage.active.is_(True)
         )
 
-    def get_all_price_for_catalog_page(self, scan_date=None):
+    def get_all_price_for_catalog_page(self, scan_date=None, imp_catalog_page_id=None):
         if scan_date:
             return self._get_catalog_page_id().filter(
                 ImpProductPrice.scan_date == scan_date
+            ).all()
+        elif imp_catalog_page_id:
+            return self._get_catalog_page_id().filter(
+                ImpCatalogPage.id == imp_catalog_page_id
             ).all()
         else:
             return self._get_catalog_page_id().all()
