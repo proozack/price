@@ -10,4 +10,4 @@ ENV=price
 # echo $1
 
 # celery -A celery_app.celery_app worker -l warning --concurrency=2
-celery -A celery_app.celery_app worker -l info --concurrency=1
+celery -A celery_app.celery_app worker -l info --concurrency=4

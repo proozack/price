@@ -509,5 +509,21 @@ def upadte_category():
         pcd.add_category(cat, 1)
 
 
+@manager.command
+def repair_product(imp_catalog_page_id):
+    """
+    tag product and copy from imp to product
+    """
+    from datetime import date
+    today = date.today()
+    imp = ImpPriceServices()
+    result = imp.get_product_by_id(imp_catalog_page_id, today)
+    run_parasing_pages(url_str=result.url)
+    tag_brand(imp_catalog_page_id=imp_catalog_page_id)
+    tag_category(imp_catalog_page_id=imp_catalog_page_id)
+    tagging_product(imp_catalog_page_id)
+    add_product(imp_catalog_page_id, today)
+
+
 if __name__ == "__main__":
     manager.run()

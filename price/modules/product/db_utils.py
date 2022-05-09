@@ -190,18 +190,18 @@ class ProductDefinitionDbu():
 
     def is_exists(self, name, brand):
         return db.session.query(
-            ProductDefinition.id
+            func.max(ProductDefinition.id).label('id')
         ).filter(
             and_(
                 ProductDefinition.name == name,
                 ProductDefinition.brand == brand,
                 ProductDefinition.active.is_(True)
             )
-        ).one_or_none()
+        ).first()
 
     def add(self, name, brand):
         result = self.is_exists(name, brand)
-        if not result:
+        if not result.id:
             pd = ProductDefinition(name, brand)
             db.session.add(pd)
             db.session.flush()
@@ -224,6 +224,32 @@ class ProductDefinitionDbu():
     @commit_after_execution
     def c_add(self, name, brand):
         return self.add(name, brand)
+
+    def get_product_info(self, imp_catalog_page_id):
+        result = db.session.query(
+            ProductDefinition.id.label('pd_id'),
+            ProductDefinition.name.label('product_name'),
+            ProductDefinition.brand.label('brand'),
+            ProductDefinition.creation_date.label('creation_date'),
+            ProductShop.product_url,
+            ProductShop.imp_catalog_page_id,
+            ProductImg.path_thumbs
+        ).join(
+            ProductShop,
+            ProductShop.product_definition_id == ProductDefinition.id,
+            isouter=True
+        ).join(
+            ProductImg,
+            and_(
+                ProductImg.product_definition_id == ProductDefinition.id,
+                ProductImg.orginal_images_id == ProductShop.imp_catalog_page_id,
+                ProductImg.img_source == 'imp_catalog_page'
+            ),
+            isouter=True
+        ).filter(
+            ProductShop.imp_catalog_page_id == imp_catalog_page_id
+        ).first()
+        return result
 
 
 class ProductImgDbu():
@@ -407,6 +433,14 @@ class ProductShopPriceDbu():
                 ProductShopPrice.active.is_(True)
             )
         ).one_or_none()
+
+    def get_by_imp_catalog_page_id(self, imp_catalog_page_id):
+        return self._get_all().join(
+            ProductShop,
+            ProductShop.id == ProductShopPrice.product_shop_id
+        ).filter(
+            ProductShop.imp_catalog_page_id == imp_catalog_page_id
+        ).all()
 
     def is_exists(self, product_shop_id, scan_date):
         return self.get_by_product_shop_id_for_date(product_shop_id, scan_date)

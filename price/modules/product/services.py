@@ -164,3 +164,16 @@ class Services():
             'product_dsc': product_dsc,
             'product_img': product_img,
         }
+
+    def get_product_info(self, imp_catalog_page_id):
+        pddbu = ProductDefinitionDbu()
+        result = pddbu.get_product_info(imp_catalog_page_id)
+        return result
+
+    def get_product_images(self, imp_catalog_page_id):
+        pidbu = ProductImgDbu()
+        return pidbu.get_by_imp_catalog_page_id(imp_catalog_page_id)
+
+    def get_product_price(self, imp_catalog_page_id):
+        pspdbu = ProductShopPriceDbu()
+        return pspdbu.get_by_imp_catalog_page_id(imp_catalog_page_id)

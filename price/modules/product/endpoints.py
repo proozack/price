@@ -142,3 +142,47 @@ class Start(Resource):
         resp = make_response(template)
         resp.mimetype = 'text/html'
         return resp
+
+
+class ProductDefinition(Resource):
+    def get(self, imp_catalog_page_id):
+        # today = datetime.date.today()
+        s = Services()
+        meta_category_id = random.randrange(1, 20, 1)
+        now = datetime.datetime.now()
+        wyn = s.get_product_info(imp_catalog_page_id)
+        template = render_template(
+            'product_definition.html',
+            resource={
+                'title': 'Price - reale value',
+                'icon_path': ''.join([Config.STATIC_URL, '/logo.png']),
+                'real_url': Config.REAL_URL,
+                'static_url': Config.STATIC_URL,
+                'description': 'Friendly prices search engine',
+                'year': now.year,
+                'category': get('http://127.0.0.1:7001/definitions_meta_category/{}'.format(meta_category_id)).get('name'), # noqa E501
+            },
+            # entities=wyn.items,
+            entities=wyn,
+            category=get('http://127.0.0.1:7001/product_category_alt/{}'.format(imp_catalog_page_id)),
+            images=get('http://127.0.0.1:7001/product_images/{}'.format(imp_catalog_page_id)),
+            prices=get('http://127.0.0.1:7001/product_shop_price/{}'.format(imp_catalog_page_id)),
+            imports=get('http://127.0.0.1:7001/catalog_product/{}'.format(imp_catalog_page_id)),
+            new_menu=get('http://127.0.0.1:7001/menu'),
+            menu=get('http://127.0.0.1:7001/price_menu'),
+        )
+        resp = make_response(template)
+        resp.mimetype = 'text/html'
+        return resp
+
+
+class ProductImg(Resource):
+    def get(self, imp_catalog_page_id):
+        s = Services()
+        return s.get_product_images(imp_catalog_page_id)
+
+
+class ProductShopPrice(Resource):
+    def get(self, imp_catalog_page_id):
+        s = Services()
+        return s.get_product_price(imp_catalog_page_id)

@@ -49,7 +49,12 @@
                 <div class="col-md-3 col-sm-6">
                     <div class="product-grid">
                         <div class="product-image">
-                            <a href="{{ entity.product_url }}" target="_blank"/>
+                            <!--
+                            # <a href="{{ entity.product_url }}" target="_blank"/>
+                            #         <img src="{{ entity.image }}" style="height: 400px;" />
+                            # </a>
+                            -->
+                            <a href="{{ resource['real_url'] }}product_definition/{{ entity.imp_catalog_page_id }}" target="_blank"/>
                                     <img src="{{ entity.image }}" style="height: 400px;" />
                             </a>
                         </div>
