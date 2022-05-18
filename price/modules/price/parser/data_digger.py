@@ -467,7 +467,7 @@ class KontriPl():
         address = NotImplemented
         img = NotImplemented
         manufacturer = NotImplemented
-
+        # log.info('SOUP %r', soup)
         raw_img = soup.find('img', {'class': 'b-lazy'})
         tmp_img = raw_img.get('data-src')
         img = ''.join([self.response_object.protocol, '://', self.response_object.domain, tmp_img])
@@ -603,6 +603,35 @@ class SensualePl():
                 result = field[0].get('href')
                 link = ''.join([self.response_object.protocol, '://', self.response_object.domain, result])
                 return link
+
+    def get_product_page(self, soup):
+        pp = ProductPage()
+        raw_brand = soup.find('a', {'class': 'brand'})
+        pp.brand = raw_brand.get('title').lower().strip()
+        raw_title = soup.find('h1', {'class': 'name'})
+        pp.title = raw_title.text.lower().strip()
+        raw_desc = soup.find('div', {'itemprop': 'description'})
+        pp.description = raw_desc.text.strip()
+        raw_path = soup.find('ul', {'class': 'path'})
+        nl = []
+        for temp_path in raw_path.findAll('li'):
+            nl.append(temp_path.text.replace('»', '/').strip())
+        pp.category = nl[-2:-1][0].replace('/', '').strip().lower()
+        path = '/'.join(nl)
+        pp.attributes = {'product_path': path}
+        raw_img = soup.findAll('a', {'class': 'gallery'})
+        img = []
+        for tmp_img in raw_img:
+            raw_thumbs = tmp_img.find('img').get('src')
+            img.append({
+                'big': ''.join([self.response_object.protocol, '://', self.response_object.domain, tmp_img.get('href')]), # noqa E501
+                'thumbs': ''.join([self.response_object.protocol, '://', self.response_object.domain, raw_thumbs]) # Noqa E501
+            })
+        pp.images = img
+        pp.size = []
+        pp.color = []
+        pp.composition = None
+        return pp
 
 
 class UlubionabieliznaPl():
@@ -924,6 +953,60 @@ class EldarPl():
                 path = ''.join([self.response_object.protocol, '://', self.response_object.domain, result])
                 return path
 
+    def get_product_page(self, soup):
+        pp = ProductPage()
+
+        not_exists = soup.find('span', {'class': 'noproduct_form_label'})
+        if not_exists is not None and not_exists.text.strip() == 'Szukasz produktu, którego nie mamy w ofercie?':
+            pp.deleted = True
+            pp.active = False
+            return pp
+
+        raw_title = soup.find('h1', {'class': 'product_name__name'})
+        pp.title = raw_title.text.lower().strip()
+        raw_brand = soup.find('a', {'class': 'brand'})
+        pp.brand = raw_brand.text.lower().strip()
+        raw_desc = soup.find('div', {'class': 'product_name__description'})
+        pp.description = raw_desc.text.strip()
+
+        raw_path = soup.find('div', {'class': 'list_wrapper'})
+        lst_attr = []
+        for tmp_path in raw_path.findAll('li'):
+            lst_attr.append(tmp_path.text.lower().strip())
+        pp.attributes = '/'.join(lst_attr)
+
+        temp_dict = soup.find('section', {'id': 'projector_dictionary'})
+        raw_attr = temp_dict.findAll('div', {'class': 'dictionary__param'})
+        dct_attr = {}
+        for ent in raw_attr:
+            key = ent.find('span', {'class': 'dictionary__name_txt'}).text.lower().strip()
+            val = ent.find('div', {'class': 'dictionary__values'}).text.lower().strip()
+            dct_attr[key] = val
+
+        pp.category = dct_attr.get('asortyment')
+        pp.composition = dct_attr.get('skład surowcowy')
+        pp.color = dct_attr.get('kolor').split('/')
+        pp.title = dct_attr.get('model').lower().strip()
+
+        temp = soup.find('div', {'id': 'photos_nav'})
+        raw_img = temp.findAll('a', {'class': 'photos__link'})
+        img = []
+        for tmp_img in raw_img:
+            raw_thumbs = tmp_img.find('img', {'class': 'photos__photo'})
+            if raw_thumbs:
+                img.append({
+                    'big': tmp_img.get('href'),
+                    'thumbs': raw_thumbs.get('data-src')
+                })
+        pp.images = img
+
+        lst_size = []
+        raw_size = soup.find('div', {'class': 'sizes'})
+        for ent in raw_size.findAll('a'):
+            lst_size.append(ent.text.lower().strip())
+        pp.size = lst_size
+        return pp
+
 
 class AnaisApparelPl():
     def __init__(self, response_object):
@@ -1005,6 +1088,73 @@ class WwwMorgantiPl():
             if result:
                 path = ''.join([self.response_object.protocol, '://', self.response_object.domain, '/', result])
                 return path
+
+    def get_product_page(self, soup):
+        pp = ProductPage()
+
+        is_active_raw = soup.find('p', {'class', 'noprod'})
+        if is_active_raw and is_active_raw.text.strip() == 'Produkt aktualnie niedostępny':
+            log.info('Product not found')
+            pp.deleted = True
+            pp.active = False
+            return pp
+
+        raw_brand = soup.find('img', {'itemprop': 'logo'})
+        if raw_brand:
+            pp.brand = raw_brand.get('alt').strip().lower()
+        else:
+            pp.brand = None
+
+        raw_title = soup.find('h1', {'itemprop': 'name'})
+        pp.title = raw_title.text.strip().lower()
+
+        raw_desc = soup.find('div', {'class': 'desc-text'})
+        if raw_desc:
+            pp.description = raw_desc.text.strip()
+        else:
+            pp.description = None
+
+        raw_size = soup.find('', {'name': 'wariant_grupa2'})
+        sizes = raw_size.findAll('option')
+        pp.size = []
+        for no, s in enumerate(sizes):
+            if no != 0:
+                pp.size.append(s.text.strip().lower())
+
+        raw_color = soup.find('', {'name': 'wariant_grupa1'})
+        colors = raw_color.findAll('option')
+        pp.color = []
+        for no, c in enumerate(colors):
+            if no != 0:
+                pp.color.append(c.text.strip().lower())
+
+        raw_cat = soup.find('div', {'id': 'breadcrumbs'})
+        path = []
+        for cat in raw_cat.findAll('li'):
+            path.append(cat.text.replace('»', '').strip().lower())
+        pp.category = path[-1]
+
+        nl = '/'.join(path)
+        pp.attributes = {'product_path': nl}
+
+        raw_img = soup.findAll('a', {'class': 'cloud-zoom-gallery'})
+        img = []
+        for tmp_img in raw_img:
+            thumbs = tmp_img.get('rel2')
+            small = thumbs.split(':')[2]
+            small = small.replace('"', '').replace("'", '').strip()
+            img.append({
+                'big': ''.join([self.response_object.protocol, '://', self.response_object.domain,'/', tmp_img.get('href')]), # noqa E501
+                'thumbs': ''.join([self.response_object.protocol, '://', self.response_object.domain, '/', small]),
+            })
+        pp.images = img
+        pp.composition = None
+
+        return pp
+
+
+class MorgantiPl(WwwMorgantiPl):
+    pass
 
 
 class DobraBieliznaPl():
@@ -1370,6 +1520,58 @@ class WwwDlazmyslowPl():
                 return path
         return None
 
+    def get_product_page(self, soup):
+        pp = ProductPage()
+
+        not_exists = soup.find('span', {'class': 'unavailable'})
+        if not_exists is not None and not_exists.text.strip() == 'PRODUKT NIEDOSTĘPNY.':
+            log.warning('Product not exist: %r ', not_exists.text)
+            pp.deleted = True
+            pp.active = False
+            return pp
+
+        raw_brand = soup.find('a', {'class': 'producent'})
+        raw_desc = soup.find('div', {'class': 'product-description'})
+        pp.description = raw_desc.text
+        if raw_brand.text:
+            pp.brand = raw_brand.text.lower().strip()
+        raw_title = soup.find('h1', {'itemprop': 'name'})
+        pp.title = raw_title.text
+
+        raw_naw_bar = soup.find('div', {'id': 'nawigacja_box'})
+        nl = []
+        for ele in raw_naw_bar.text.split('>'):
+            if ele not in ('', ' ', '\n', '\t'):
+                nl.append(ele.strip())
+        pp.category = nl[-2:-1][0].lower()
+        nl = '/'.join(nl)
+        pp.attributes = {'product_path': nl}
+
+        pp.color = []
+        pp.composition = None
+        pp.size = None
+
+        raw_big_img = soup.findAll('a', {'class': 'zoom'})
+        raw_small_img = soup.findAll('div', {'class': 'item-slick'})
+        lst_big_img = [
+            tmp_img.get('href')
+            for tmp_img in raw_big_img
+        ]
+        img = []
+        no = 0
+        for tmp_img in raw_small_img:
+            temp = tmp_img.find('img')
+            img.append({
+                'big': lst_big_img[no],
+                'thumbs': temp.get('src')
+            })
+            no = no+1
+
+        # log.info('lst big img %r', lst_big_img)
+        # log.info('lst small img %r', img)
+        pp.images = img
+        return pp
+
 
 class WwwAstratexPl():
     def __init__(self, response_object):
@@ -1603,7 +1805,6 @@ class WwwHurtowniaOlenkaPl():
         pp.composition = None
         pp.color = None
         pp.size = None
-        # log.info('Soup \n%r',soup)
         img = []
         raw_img = soup.find('div', {'id': 'ZdjeciaProduktu'})
         for tmp_img in raw_img.findAll('a'):

@@ -78,6 +78,8 @@ class EntryPoint(Resource):
                     'hash': '',
                     'brand': i.main_brand,
                     'product_url': i.url,
+                    'imp_catalog_page_id': i.imp_catalog_page_id,
+                    'category': get('http://127.0.0.1:7001/product_category_alt/{}'.format(i.imp_catalog_page_id)),
                 }
                 for i in wyn.items
             ]

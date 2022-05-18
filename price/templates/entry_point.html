@@ -49,15 +49,27 @@
                 <div class="col-md-3 col-sm-6">
                     <div class="product-grid">
                         <div class="product-image">
-                            <a href="{{ entity.product_url }}" target="_blank"/>
+                            <!--
+                            # <a href="{{ entity.product_url }}" target="_blank"/>
+                            #         <img src="{{ entity.image }}" style="height: 400px;" />
+                            # </a>
+                            -->
+                            <a href="{{ resource['real_url'] }}product_definition/{{ entity.imp_catalog_page_id }}" target="_blank"/>
                                     <img src="{{ entity.image }}" style="height: 400px;" />
                             </a>
                         </div>
                         <div class="product-discount-label">
-                            Tutaj będą kategorie
+                            {% for category in entity.category -%}
+                                {% if category.active %}
+                                    <span class="badge badge-primary">{{ category.category_name }}</span>
+                                {% else %}
+                                    <span class="badge badge-danger">{{ category.category_name }}</span>
+                                {% endif %}
+                                <br />
+                            {% endfor %}
                         </div>
                         <div class="social" style="background-color: #FFFFFF; border: 1px solid red;">
-                            Product ID: {{ entity.product_id }}
+                            Product ID: {{ entity.imp_catalog_page_id }}
                         </div>
                         <div class="product-content">
                             <h3 class="title"><a href="#"><b>{{ entity.brand }}</b> - <i>{{ entity.title }}</i></a></h3>

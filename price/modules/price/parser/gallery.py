@@ -64,6 +64,8 @@ class GaleryParser(AbstractParser):
             'ohso.pl': 'div_kat_prod',
             'byann.pl': 'div_product',
             'kontri.pl': 'div_item_product',
+            # 'kontri.pl': 'product_wrapper',
+            'www.kontri.pl': 'div_item_product',
             'sensuale.pl': 'div_product',
             'e-lady.pl': 'div_product_box',
             'magicznabielizna.pl': 'div_multi_class',

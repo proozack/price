@@ -115,24 +115,24 @@ class Services():
         tca = TagerCategoryAssignmentDbu()
         tcs = TagerCategorySynonymDbu()
         if dict_tagging_product is None:
-            raise ValueError('No parameters')
-
-        temp = tcs.search_category(dict_tagging_product)
-        if temp:
-            for element in temp:
-                result = tca.c_add_assignment( # noqa F841
-                    dict_tagging_product.get('imp_catalog_page_id'),
-                    element[1],
-                    element[2]
-                )
-            url = 'http://127.0.0.1:7001/catalog_page_status'
-            post(url, {
-                    'imp_catalog_page_id': dict_tagging_product.get('imp_catalog_page_id'),
-                    'status_type': 'category'
-                }
-            )
+            log.info('No parameters - dict_tagging_product')
         else:
-            log.warning('Can\'t tagging category %r', dict_tagging_product.get('imp_catalog_page_id'))
+            temp = tcs.search_category(dict_tagging_product)
+            if temp:
+                for element in temp:
+                    result = tca.c_add_assignment( # noqa F841
+                        dict_tagging_product.get('imp_catalog_page_id'),
+                        element[1],
+                        element[2]
+                    )
+                url = 'http://127.0.0.1:7001/catalog_page_status'
+                post(url, {
+                        'imp_catalog_page_id': dict_tagging_product.get('imp_catalog_page_id'),
+                        'status_type': 'category'
+                    }
+                )
+            else:
+                log.warning('Can\'t tagging category %r', dict_tagging_product.get('imp_catalog_page_id'))
 
     def add_color_synonym(self, value):
         tbs = TagerColorSynonymDbu()
