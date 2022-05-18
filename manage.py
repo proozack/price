@@ -515,13 +515,41 @@ def repair_product(imp_catalog_page_id):
     tag product and copy from imp to product
     """
     from datetime import date
+    from price.modules.tager.services import Services as TagerServices
+    from price.modules.imp_price.services import Services
+    from price.modules.imp_price.services import Services as PpServices
+    from price.utils.dict_utils import sa_obj_to_dict
     today = date.today()
+    creation_date = today
+    entry_point_id = None
+    shop_id = None
+    ts = TagerServices()
+
     imp = ImpPriceServices()
     result = imp.get_product_by_id(imp_catalog_page_id, today)
-    run_parasing_pages(url_str=result.url)
-    tag_brand(imp_catalog_page_id=imp_catalog_page_id)
-    tag_category(imp_catalog_page_id=imp_catalog_page_id)
-    tagging_product(imp_catalog_page_id)
+
+    s = Services()
+    ipp = ImpPriceServices()
+    for oi, result in enumerate(ipp.get_pages(shop_id=shop_id, url_str=result.url, entry_point_id=entry_point_id)):
+        dict_result = sa_obj_to_dict(result)
+        pps = PpServices()
+        pps.process_product_pages(dict_result)
+
+    tp = s.get_tagging_product(imp_catalog_page_id)
+    assignment_brand = ts.add_brand_assignment(tp)
+    if assignment_brand:
+        ts.save_assignment_brand(assignment_brand)
+    else:
+        log.warning('Can\'t tagging brand %r', tp.get('imp_catalog_page_id'))
+
+    tp = s.get_tagging_product(imp_catalog_page_id)
+    # ts = TagerServices()
+    ts.add_category_assignment(tp)
+
+    for imp_catalog_page_id, title in s.get_list_pages(imp_catalog_page_id, creation_date, entry_point_id):
+        ts = TagerServices()
+        ts.tagging_product(imp_catalog_page_id, title)
+
     add_product(imp_catalog_page_id, today)
 
 

@@ -38,6 +38,16 @@
 {% endblock %}
 
 {% block content %}
+    <script>
+        function napraw(imp_catalog_page_id){
+            $( "#naprawspinner" ).show();
+            $.get( "http://py2.eu:7001/product_repair/"+imp_catalog_page_id).done( 
+                function( data ) {
+                    location.reload();
+                }
+            );
+        }
+    </script>
 <section class="section">
 
     <div class="container">
@@ -45,7 +55,12 @@
         <div>
             <h1 style="font-family: Playfair Display;"><b>Product name:</b> {{ entities['product_name']|upper }} </h1>
         </div>
-
+        <div style="padding: 10px;">
+            <button type="button" class="btn btn-danger" id="napraw" onclick="napraw({{ entities.imp_catalog_page_id }})">Naprawd produckt</button>
+            <div class="spinner-border spinner-border-sm" role="status" id="naprawspinner" style="display: none;">
+                  <span class="sr-only">Loading...</span>
+            </div>
+        </div>
 <ul class="nav nav-tabs">
   <li class="active" style="border: 1px solid grey; padding: 15px;"><a data-toggle="tab" href="#product">Product</a></li>
   <li style="border: 1px solid grey; padding: 15px;"><a data-toggle="tab" href="#tabprices">Prices</a></li>

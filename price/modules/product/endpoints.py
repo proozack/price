@@ -186,3 +186,12 @@ class ProductShopPrice(Resource):
     def get(self, imp_catalog_page_id):
         s = Services()
         return s.get_product_price(imp_catalog_page_id)
+
+
+class ProductRepair(Resource):
+    def get(self, imp_catalog_page_id):
+        from manage import repair_product
+        repair_product(imp_catalog_page_id)
+        return {
+            'status': 'ok'
+        }

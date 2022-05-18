@@ -358,7 +358,7 @@ class ProductShopDbu():
                 ProductShop.imp_catalog_page_id == imp_catalog_page_id,
                 ProductShop.active.is_(True)
             )
-        ).one_or_none()
+        ).first()
 
     def is_exists(self, product_definition_id, imp_catalog_page_id):
         return self._get_all().filter(

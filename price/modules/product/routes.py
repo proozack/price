@@ -10,7 +10,8 @@ from price.modules.product.endpoints import (
     ProductCategoryAlt,
     ProductDefinition,
     ProductImg,
-    ProductShopPrice
+    ProductShopPrice,
+    ProductRepair
 )
 
 api.add_resource(Start, '/')
@@ -24,3 +25,4 @@ api.add_resource(ProductCategoryAlt, '/product_category_alt/<int:imp_catalog_pag
 api.add_resource(ProductDefinition, '/product_definition/<int:imp_catalog_page_id>')
 api.add_resource(ProductImg, '/product_images/<int:imp_catalog_page_id>')
 api.add_resource(ProductShopPrice, '/product_shop_price/<int:imp_catalog_page_id>')
+api.add_resource(ProductRepair, '/product_repair/<int:imp_catalog_page_id>')
