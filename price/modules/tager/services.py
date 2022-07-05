@@ -182,6 +182,7 @@ class Services():
             ch_title = self.remove_category(imp_catalog_page_id, ch_title)
             ch_title = self.remove_color(imp_catalog_page_id, ch_title)
             ch_title = self.remove_tag(imp_catalog_page_id, ch_title)
+            ch_title = self.remove_size(imp_catalog_page_id, ch_title)
             dct_tagging_result = {
                 'name': split_title(ch_title),
                 'imp_catalog_page_id': imp_catalog_page_id,
@@ -226,6 +227,13 @@ class Services():
         result = ttr.search_tag_in_title(imp_catalog_page_id, title)
         for category in result:
             title = title.replace(category.value, '')
+        return title.strip()
+
+    def remove_size(self, imp_catalog_page_id, title):
+        ttr = TagerTaggingResultDbu()
+        result = ttr.search_size_in_title(imp_catalog_page_id, title)
+        for category in result:
+            title = title.replace(category.name, '')
         return title.strip()
 
     def get_product_by_id(self, imp_catalog_page_id):

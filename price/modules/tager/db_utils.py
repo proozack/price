@@ -13,7 +13,7 @@ from price.modules.tager.models import (
     TagerCategorySynonym,
     TagerBrand,
     TagerBrandSynonym,
-    # TagerSize,
+    TagerSize,
     TagerBrandAssignment,
     TagerCategoryAssignment,
     TagerColor,
@@ -890,6 +890,23 @@ select value from selected where pos = 1 order by char_length(value) desc
 """
         return db.session.execute(query, {'title': title}).fetchall()
 
+    def search_size_in_title(self, imp_catalog_page_id, title):
+        query = """
+with params as (
+select
+    :title as title
+)
+,selected as (
+    select
+        ts.name,
+        row_number() over(partition by ts.id order by char_length(ts.name) DESC) pos
+    from params p
+    join tager_size ts on position(ts.name in p.title) > 0 and ts.active is true
+)
+select name from selected where pos = 1 order by char_length(name) desc
+"""
+        return db.session.execute(query, {'title': title}).fetchall()
+
     def get_definition_result(self, imp_catalog_page_id=None):
         result = db.session.query(
             TagerTaggingResult.id,
@@ -908,3 +925,81 @@ select value from selected where pos = 1 order by char_length(value) desc
                 TagerTaggingResult.imp_catalog_page_id == imp_catalog_page_id
             )
         return result.all()
+
+
+class TagerSizeDbu():
+    def _get_all(self):
+        return db.session.query(
+            TagerSize.id,
+            TagerSize.name,
+            TagerSize.meaning,
+            TagerSize.active,
+            TagerSize.deleted
+        )
+
+    def get_all(self):
+        return self._get_all().filter(
+            and_(
+                TagerSize.active.is_(True),
+                TagerSize.deleted.isnot(True)
+            )
+        ).all()
+
+    def get_by_id(self, size_id: int):
+        return self._get_all().filter(
+            and_(
+                TagerSize.id == size_id,
+                TagerSize.active.is_(True),
+                TagerSize.deleted.isnot(True)
+            )
+        ).first()
+
+    def get_by_name(self, name: str):
+        return self._get_all().filter(
+            and_(
+                TagerSize.name == name,
+                TagerSize.active.is_(True),
+                TagerSize.deleted.isnot(True)
+            )
+        ).first()
+
+    def get_by_meaning(self, meaning: str):
+        return self._get_all().filter(
+            and_(
+                TagerSize.name == meaning,
+                TagerSize.active.is_(True),
+                TagerSize.deleted.isnot(True)
+            )
+        ).all()
+
+    def is_exists(self, name: str) -> bool:
+        size = self.get_by_name(name)
+        if size:
+            return size
+        return None
+
+    def add(self, name, meaning):
+        result = self.is_exists(name)
+        if not result:
+            pd = TagerSize(name, meaning)
+            db.session.add(pd)
+            db.session.flush()
+            result = pd
+        else:
+            pd = TagerSize.query.filter(
+                and_(
+                    TagerSize.name == name,
+                    TagerSize.meaning == meaning
+                )
+            ).first()
+            pd.name = name
+            pd.meaning = meaning
+            pd.last_update_by = datetime.datetime.now()
+            pd.last_update_by = 1
+            db.session.flush()
+            result = pd
+        return result
+
+    @commit_after_execution
+    def c_add(self, name, meaning):
+        return self.add(name, meaning)
