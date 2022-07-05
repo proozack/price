@@ -297,6 +297,21 @@ class TagerSize(DbUtils):
     name = Column(Text, nullable=False, comment='Key Word', unique=True)
     meaning = Column(Text, nullable=True, comment='Meaning word using to grouping')
 
+    def __init__(self, name, meaning):
+        if name is None or name == '':
+            raise ValueError('Field name can\'t be empty')
+        if meaning is None or meaning == '':
+            raise ValueError('Field meaning can\'t be empty')
+        self.name = name.lower()
+        self.meaning = meaning.lower()
+
+    def __repr__(self):
+        return '<TagerSize ID: {}, name: {}, meaning: {}>'.format(
+            self.id,
+            self.name,
+            self.meaning
+        )
+
 
 class TagerTaggingResult(DbUtils):
     __tablename__ = 'tager_tagging_result'
@@ -312,7 +327,6 @@ class TagerTaggingResult(DbUtils):
     name = Column(Text, nullable=False, comment='product namee')
     orginal_title = Column(Text, nullable=False, comment='orginal title')
     brand = Column(Text, nullable=False, comment='brands name')
-    # category = Column(Text, nullable=False, comment='polish color name')
 
     def __init__(self, imp_catalog_page_id, name, orginal_title, brand):
         if imp_catalog_page_id is None:
@@ -323,13 +337,10 @@ class TagerTaggingResult(DbUtils):
             raise ValueError('Field orginal_title can\'t be empty')
         if brand is None or brand == '':
             raise ValueError('Field brand can\'t be empty')
-        # if category is None or category == '':
-        #     raise ValueError('Field category can\'t be empty')
         self.imp_catalog_page_id = imp_catalog_page_id
         self.name = name
         self.orginal_title = orginal_title
         self.brand = brand
-        # self.category = category
 
     def __repr__(self):
         return '<TagerTaggingResult IcpID: {} Title {}'.format(self.imp_catalog_page_id, self.name)
