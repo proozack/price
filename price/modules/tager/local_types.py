@@ -14,7 +14,12 @@ log = logging.getLogger(__name__)
 
 
 class Definitions():
-    def __init__(self, brands: list = [], categories: list = [], colors: list = [], sizes: list = []) -> NoReturn: # noqa E501
+    def __init__(self,
+                 brands: list = [],
+                 categories: list = [],
+                 colors: list = [],
+                 sizes: list = []
+            ) -> NoReturn: # noqa E501
         self.__brands = brands
         self.__categories = categories
         self.__colors = colors
@@ -113,10 +118,3 @@ class AnalyzedText():
 
     def load_definitions(self, definitions: Definitions):
         self.__definitions = definitions
-
-    # both of the following functions will be to replace, to universal tools.
-    def get_brand(self) -> list:
-        pass
-
-    def get_categories(self) -> list:
-        pass

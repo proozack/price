@@ -126,6 +126,17 @@ class TagerBrandAssignmentDbu():
 
 
 class TagerBrandDbu():
+    def __all(self):
+        return db.session.query(
+            TagerBrand.id,
+            TagerBrand.name
+        ).filter(
+            TagerBrand.active.is_(True)
+        )
+
+    def get_all(self):
+        return self.__all().all()
+
     def get_id_by_name(self, name):
         return db.session.query(
             TagerBrand.id
